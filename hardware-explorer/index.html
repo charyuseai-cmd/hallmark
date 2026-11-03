@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>Hardware Explorer, penjelajahan tiga dimensi papan induk</title>
+  <meta name="description" content="Pengalaman gulir tiga dimensi yang membongkar CPU, RAM, GPU dan komponen papan induk, lalu merakitnya kembali.">
+  <link rel="icon" href="data:,">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600&amp;family=IBM+Plex+Sans:wght@400;500&amp;family=IBM+Plex+Mono:wght@500&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="vendor/gsap.min.js"></script>
+  <script src="vendor/ScrollTrigger.min.js"></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#journey">Lewati ke penjelajahan</a>
+
+  <div class="backdrop" aria-hidden="true"></div>
+  <canvas id="scene" aria-hidden="true"></canvas>
+
+  <header class="bar">
+    <div class="wrap bar__in">
+      <a class="brand" href="#top" aria-label="Hardware Explorer, kembali ke atas"><span class="brand__mark" aria-hidden="true">/</span>hardware explorer</a>
+      <nav class="bar__nav" aria-label="Bagian halaman">
+        <a href="#journey">Penjelajahan</a>
+        <a href="#komponen">Register</a>
+        <a href="#rakit">Rakit</a>
+      </nav>
+      <a class="btn btn--primary" href="#journey">Mulai</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="top" aria-labelledby="judul">
+      <div class="wrap hero__grid">
+        <div class="hero__copy">
+          <h1 id="judul">Hardware Explorer</h1>
+          <p class="lede">Satu papan, tujuh tahap gulir. Kamera turun, komponen lepas, lalu kembali terakit.</p>
+          <div class="aksi">
+            <a class="btn btn--primary" href="#journey">Mulai penjelajahan</a>
+            <a class="btn btn--line" href="#komponen">Lihat register</a>
+          </div>
+          <p class="fine">Adegan tiga dimensi dibangun dari objek asli, bukan gambar diam.</p>
+        </div>
+        <div class="hero__ukur" aria-hidden="true">
+          <div class="dim"><span class="num">10 × 7 unit adegan</span></div>
+          <p class="ukur">Lembar biru Prusia, garis putih, tanpa warna kedua.</p>
+          <p class="ukur">Ukuran di atas adalah satuan adegan, bukan ukuran fisik perangkat.</p>
+        </div>
+      </div>
+      <p class="cue" data-cue>Gulir untuk membongkar</p>
+    </section>
+
+    <section class="journey" id="journey" aria-label="Penjelajahan komponen">
+      <div class="hud" aria-hidden="true">
+        <p class="hud__tahap" data-hud-tahap>Rakit utuh</p>
+        <p class="hud__no num" data-hud-no>00 / 06</p>
+        <div class="rail"><i data-rail></i></div>
+        <p class="hud__persen num" data-hud-persen>0%</p>
+      </div>
+      <p class="sr" aria-live="polite" data-announce></p>
+
+      <div class="steps">
+        <article class="step" data-step="0">
+          <h2>Rakit utuh</h2>
+          <p>Seluruh komponen duduk pada papan induk. Kamera melihat dari tiga perempat, jarak jauh, sebelum turun ke detail.</p>
+          <p class="ukur">Tahap 00, kamera 13,5 unit</p>
+        </article>
+        <article class="step" data-step="1">
+          <h2>Unit pemroses</h2>
+          <p>Kamera mendekat ke soket. Prosesor dan pendingin naik perlahan, memperlihatkan tumpukan logam di atas die.</p>
+          <p class="ukur">Tahap 01, fokus cpu</p>
+        </article>
+        <article class="step" data-step="2">
+          <h2>Memori</h2>
+          <p>Empat keping memori berdiri di sela soket. Kamera bergeser ke kanan, keping terangkat satu per satu.</p>
+          <p class="ukur">Tahap 02, fokus ram</p>
+        </article>
+        <article class="step" data-step="3">
+          <h2>Grafis</h2>
+          <p>Kartu panjang melintang di jalur ekspansi. Kamera turun ke dua kipas, lalu kartu terangkat dari slotnya.</p>
+          <p class="ukur">Tahap 03, fokus gpu</p>
+        </article>
+        <article class="step" data-step="4">
+          <h2>Penyimpanan dan daya</h2>
+          <p>Drive tipis, blok pendingin regulator, dan port belakang ikut terangkat. Urutan ini menjaga hubungan antar komponen tetap terbaca.</p>
+          <p class="ukur">Tahap 04, fokus storage, vrm, io</p>
+        </article>
+        <article class="step" data-step="5">
+          <h2>Tampilan lepas</h2>
+          <p>Kamera mundur. Semua bagian bergerak ke posisi lepas dengan sedikit rotasi, membentuk peta letak yang utuh.</p>
+          <p class="ukur">Tahap 05, exploded view</p>
+        </article>
+        <article class="step" data-step="6">
+          <h2>Kembali dan rakit utuh</h2>
+          <p>Bagian turun ke tempatnya. Kamera berhenti pada sudut akhir, papan kembali menjadi satu kesatuan yang siap dinyalakan.</p>
+          <p class="ukur">Tahap 06, assembly</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="register" id="komponen" aria-labelledby="register-judul">
+      <div class="wrap">
+        <div class="kepala">
+          <h2 id="register-judul">Register komponen</h2>
+          <p class="lede">Daftar sama dengan yang digerakkan di adegan, disusun sebagai lembar gambar.</p>
+        </div>
+        <table class="tabel">
+          <thead>
+            <tr><th scope="col">No</th><th scope="col">Komponen</th><th scope="col">Peran</th><th scope="col">Letak</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="num">01</td><td>Papan induk</td><td>Dudukan dan jalur antar bagian</td><td>Bidang dasar</td></tr>
+            <tr><td class="num">02</td><td>Prosesor</td><td>Menjalankan instruksi</td><td>Soket kiri</td></tr>
+            <tr><td class="num">03</td><td>Pendingin</td><td>Membuang panas dari prosesor</td><td>Di atas soket</td></tr>
+            <tr><td class="num">04</td><td>Memori</td><td>Menyimpan data kerja</td><td>Sela kanan</td></tr>
+            <tr><td class="num">05</td><td>Kartu grafis</td><td>Mengolah keluaran gambar</td><td>Jalur ekspansi</td></tr>
+            <tr><td class="num">06</td><td>Penyimpanan</td><td>Menyimpan data tetap</td><td>Sela bawah</td></tr>
+            <tr><td class="num">07</td><td>Regulator dan port</td><td>Mengatur daya dan sambungan</td><td>Tepi papan</td></tr>
+          </tbody>
+        </table>
+        <details class="diagram">
+          <summary>Diagram lepas alternatif</summary>
+          <figure>
+            <svg viewBox="0 0 420 260" aria-hidden="true">
+              <rect class="dg-board" x="40" y="170" width="340" height="70"></rect>
+              <rect class="dg-cpu" x="95" y="120" width="70" height="34"></rect>
+              <rect class="dg-cooler" x="100" y="72" width="60" height="30"></rect>
+              <rect class="dg-ram" x="205" y="108" width="18" height="56"></rect>
+              <rect class="dg-ram" x="230" y="108" width="18" height="56"></rect>
+              <rect class="dg-ram" x="255" y="108" width="18" height="56"></rect>
+              <rect class="dg-gpu" x="150" y="36" width="170" height="28"></rect>
+              <rect class="dg-ssd" x="300" y="132" width="60" height="16"></rect>
+              <path class="dg-line" d="M130 154 L130 170 M130 102 L130 120 M214 164 L214 170 M235 36 L235 64 M330 148 L330 170"></path>
+            </svg>
+            <figcaption>Skema letak dalam satuan adegan. Garis menunjukkan arah kembali ke papan.</figcaption>
+          </figure>
+        </details>
+      </div>
+    </section>
+
+    <section class="closing" id="rakit" aria-labelledby="rakit-judul">
+      <div class="wrap closing__in">
+        <h2 id="rakit-judul">Satu papan, utuh kembali</h2>
+        <p class="lede">Gulir balik untuk mengulang pembongkaran, atau mulai lagi dari layar pertama.</p>
+        <a class="btn btn--primary" href="#top">Ulangi dari awal</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="kaki">
+    <div class="wrap kaki__in">
+      <a class="brand brand--kaki" href="#top"><span class="brand__mark" aria-hidden="true">/</span>hardware explorer</a>
+      <p>Adegan memakai Three.js dan GSAP ScrollTrigger. Material rupa mengikuti tema Blueprint dari repositori Hallmark.</p>
+      <p class="kaki__bawah">Objek dibangun secara prosedural, tanpa tekstur luar. Gerak mengikuti posisi gulir, bukan waktu otomatis.</p>
+    </div>
+  </footer>
+</body>
+</html>
