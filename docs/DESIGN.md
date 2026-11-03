@@ -90,4 +90,18 @@ Hasil: **0 FAIL, 0 REFLEX, 0 WARN**. Smoke test Node dengan `WebGLRenderer` bert
 | `style.css` | Token Blueprint, keyline, kanvas tetap, HUD, media query, reduced motion |
 | `app.js` | Adegan Three.js, pembacaan token warna, master timeline, sinkronisasi UI |
 | `vendor/` | Three.js dan GSAP ScrollTrigger lokal, tanpa CDN |
+| `Hardware-Explorer-standalone.html` | Satu berkas mandiri: CSS, Three.js, GSAP dan `app.js` tertanam, tanpa ketergantungan jaringan; dapat dibuka lewat `file://` |
 | `DESIGN.md` | Dokumen ini |
+
+## Akses publik (media alternatif)
+
+Pratinjau Arena memakai host `*.e2b.app` yang tidak selalu dapat dibuka dari jaringan pengguna. GitHub Pages tidak dapat diaktifkan karena token integrasi repo ini mengembalikan `403 Resource not accessible by integration` pada endpoint Pages. Karena itu disediakan tiga jalur lain:
+
+1. **Halaman live tanpa unduhan** — HTML mandiri dirender lewat HTMLPreview:
+   `https://htmlpreview.github.io/?https://raw.githubusercontent.com/charyuseai-cmd/hallmark/67007729afe18dd59dff313dce92a7fe4fef811f/hardware-explorer/Hardware-Explorer-standalone.html`
+2. **Versi multi-berkas live** — disajikan CDN Statically dari commit yang sama:
+   `https://cdn.statically.io/gh/charyuseai-cmd/hallmark@67007729afe18dd59dff313dce92a7fe4fef811f/hardware-explorer/index.html`
+3. **Berkas untuk dibuka lokal** — salin `Hardware-Explorer-standalone.html`, lalu klik dua kali; atau unduh dari:
+   `https://github.com/charyuseai-cmd/hallmark/raw/refs/heads/arena/c5662565-hallmark/hardware-explorer/Hardware-Explorer-standalone.html`
+
+HTML mandiri dibuat dengan `esbuild` (`--bundle --format=iife`) dari `app.js` plus `vendor/three.module.js` dan `three.core.js`, lalu menyisipkan CSS, GSAP, ScrollTrigger dan hasil bundel ke dalam `index.html`. Tidak ada `src` atau `href` eksternal yang tersisa; Google Fonts sengaja dihapus agar fallback sistem tetap bekerja luring.
