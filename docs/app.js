@@ -1,5 +1,5 @@
-/* Hardware Explorer: satu kanvas Three.js, satu timeline GSAP ScrollTrigger.
- * Posisi gulir menggerakkan kamera, transformasi objek dan teks secara bersamaan. */
+/* Hardware Explorer · Vantage. Satu kanvas Three.js, satu timeline GSAP ScrollTrigger.
+ * Gulir menggerakkan kamera, transformasi objek, sapuan titik dan teks secara bersamaan. */
 import * as THREE from './vendor/three.module.js';
 
 (() => {
@@ -13,21 +13,31 @@ import * as THREE from './vendor/three.module.js';
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const mobile = window.matchMedia('(max-width: 760px)').matches;
   const canvas = document.getElementById('scene');
+  const profileCanvas = document.getElementById('profile');
   const body = document.body;
+  const root = document.documentElement;
 
   const steps = Array.from(document.querySelectorAll('.step'));
+  const stageButtons = Array.from(document.querySelectorAll('.stage'));
   const hudTahap = document.querySelector('[data-hud-tahap]');
   const hudNo = document.querySelector('[data-hud-no]');
   const hudPersen = document.querySelector('[data-hud-persen]');
   const rail = document.querySelector('[data-rail]');
   const announce = document.querySelector('[data-announce]');
+  const calloutLabel = document.querySelector('[data-callout-label]');
+  const calloutFig = document.querySelector('[data-callout-fig]');
+
   const LABELS = [
     'Rakit utuh', 'Unit pemroses', 'Memori', 'Grafis',
-    'Penyimpanan dan daya', 'Tampilan lepas', 'Kembali dan rakit utuh',
+    'Daya dan simpan', 'Tampilan lepas', 'Utuh kembali',
+  ];
+  const CALLOUT_LABELS = [
+    'Soket prosesor', 'Soket prosesor', 'Keping memori', 'Kartu grafis',
+    'Drive dan regulator', 'Peta letak lepas', 'Papan utuh',
   ];
 
   /* Warna dibaca dari token CSS, lalu diubah ke sRGB untuk Three.js. */
-  const rootStyle = getComputedStyle(document.documentElement);
+  const rootStyle = getComputedStyle(root);
   function oklchToHex(L, C, H) {
     const h = (H * Math.PI) / 180;
     const a = C * Math.cos(h);
@@ -51,329 +61,517 @@ import * as THREE from './vendor/three.module.js';
     const H = parseFloat(m[3]);
     let alpha = 1;
     if (m[4]) alpha = m[4].endsWith('%') ? parseFloat(m[4]) / 100 : parseFloat(m[4]);
-    return { hex: oklchToHex(L, C, H), alpha: Math.min(1, Math.max(0, alpha)) };
+    return { hex: oklchToHex(L, C, H), alpha };
   }
   const C = {
     paper: token('--color-paper'), paper2: token('--color-paper-2'), paper3: token('--color-paper-3'),
     ink: token('--color-ink'), ink2: token('--color-ink-2'), muted: token('--color-muted'),
     rule: token('--color-rule'), rule2: token('--color-rule-2'),
-    grid: token('--color-grid'), grid2: token('--color-grid-2'),
+    accent: token('--color-accent'), pointLo: token('--point-lo'),
+    pointMid: token('--point-mid'), pointHi: token('--point-hi'),
   };
+  const col = (t) => new THREE.Color(t.hex);
 
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({
-      canvas,
-      antialias: !mobile,
-      alpha: true,
-      powerPreference: 'high-performance',
+      canvas, antialias: !mobile, alpha: true, powerPreference: 'high-performance',
     });
   } catch (err) {
     body.classList.add('is-static');
+    drawProfile();
     return;
   }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.75));
-  renderer.setClearColor(new THREE.Color(C.paper3.hex), 0);
+  renderer.setClearColor(col(C.paper), 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.08;
+  renderer.toneMappingExposure = 1.04;
   renderer.shadowMap.enabled = !mobile;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(new THREE.Color(C.paper3.hex), 0.012);
-  const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 100);
+  scene.fog = new THREE.FogExp2(col(C.paper), 0.011);
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
   camera.position.set(0, 7.5, 13.5);
-  const target = { x: 0, y: 0.2, z: 0 };
 
-  const hemi = new THREE.HemisphereLight(new THREE.Color(C.ink.hex), new THREE.Color(C.paper3.hex), 1.5);
+  const hemi = new THREE.HemisphereLight(col(C.ink), col(C.paper3), 1.35);
   scene.add(hemi);
-  const key = new THREE.DirectionalLight(new THREE.Color(C.ink.hex), 2.4);
-  key.position.set(-5, 10, 7);
-  key.castShadow = !mobile;
-  key.shadow.mapSize.set(1024, 1024);
-  key.shadow.camera.left = -9;
-  key.shadow.camera.right = 9;
-  key.shadow.camera.top = 9;
-  key.shadow.camera.bottom = -9;
-  key.shadow.camera.near = 1;
-  key.shadow.camera.far = 30;
-  scene.add(key);
-  const rim = new THREE.DirectionalLight(new THREE.Color(C.muted.hex), 1.3);
+  const keyLight = new THREE.DirectionalLight(col(C.ink), 2.1);
+  keyLight.position.set(-5, 10, 7);
+  keyLight.castShadow = !mobile;
+  keyLight.shadow.mapSize.set(1024, 1024);
+  keyLight.shadow.camera.left = -9; keyLight.shadow.camera.right = 9;
+  keyLight.shadow.camera.top = 9; keyLight.shadow.camera.bottom = -9;
+  keyLight.shadow.camera.near = 1; keyLight.shadow.camera.far = 30;
+  scene.add(keyLight);
+  const rim = new THREE.DirectionalLight(col(C.muted), 1.1);
   rim.position.set(7, 5, -9);
   scene.add(rim);
-  const fill = new THREE.PointLight(new THREE.Color(C.paper2.hex), 18, 28);
+  const fill = new THREE.PointLight(col(C.pointMid), 14, 28);
   fill.position.set(2, 4, 6);
   scene.add(fill);
-
-  const matPCB = new THREE.MeshStandardMaterial({ color: C.paper3.hex, roughness: 0.86, metalness: 0.14 });
-  const matDark = new THREE.MeshStandardMaterial({ color: C.paper3.hex, roughness: 0.62, metalness: 0.30 });
-  const matInk = new THREE.MeshStandardMaterial({ color: C.ink.hex, roughness: 0.38, metalness: 0.50 });
-  const matMetal = new THREE.MeshStandardMaterial({ color: C.muted.hex, roughness: 0.30, metalness: 0.78 });
-  const matLine = new THREE.LineBasicMaterial({ color: C.rule.hex, transparent: true, opacity: C.rule.alpha });
-
-  function gridTexture() {
-    const size = 512;
-    const c = document.createElement('canvas');
-    c.width = c.height = size;
-    const ctx = c.getContext('2d');
-    ctx.fillStyle = C.paper2.hex;
-    ctx.fillRect(0, 0, size, size);
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = C.grid.hex;
-    ctx.globalAlpha = C.grid.alpha;
-    for (let i = 0; i <= size; i += 32) {
-      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, size); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(size, i); ctx.stroke();
-    }
-    ctx.strokeStyle = C.grid2.hex;
-    ctx.globalAlpha = C.grid2.alpha;
-    for (let i = 0; i <= size; i += 128) {
-      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, size); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(size, i); ctx.stroke();
-    }
-    const t = new THREE.CanvasTexture(c);
-    t.colorSpace = THREE.SRGBColorSpace;
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set(2.5, 1.75);
-    t.anisotropy = 4;
-    return t;
-  }
-  const matSurface = new THREE.MeshStandardMaterial({ map: gridTexture(), roughness: 0.92, metalness: 0.06 });
 
   const rig = new THREE.Group();
   rig.rotation.set(0.02, -0.18, 0);
   scene.add(rig);
-  const board = new THREE.Group();
-  rig.add(board);
 
-  function mesh(parent, geo, mat, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) {
-    const m = new THREE.Mesh(geo, mat);
-    m.position.set(x, y, z);
-    m.rotation.set(rx, ry, rz);
-    m.castShadow = !mobile;
-    m.receiveShadow = true;
-    parent.add(m);
-    return m;
-  }
-  const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
-  const cyl = (r, h, seg = 20) => new THREE.CylinderGeometry(r, r, h, seg);
-
-  /* Papan induk */
-  mesh(board, box(10, 0.18, 7), matPCB, 0, 0, 0);
-  const top = mesh(board, new THREE.PlaneGeometry(10, 7), matSurface, 0, 0.095, 0, -Math.PI / 2, 0, 0);
-  top.castShadow = false;
-
-  const tracePoints = [];
-  const pushLine = (x1, z1, x2, z2) => {
-    tracePoints.push(new THREE.Vector3(x1, 0.102, z1), new THREE.Vector3(x2, 0.102, z2));
+  /* Shader titik: sapuan scroll-driven, tanpa bloom, tanpa garis penghubung. */
+  const uniforms = {
+    uSweepY: { value: -1.2 },
+    uSweepWidth: { value: 0.55 },
+    uFoundGroup: { value: -1 },
+    uLime: { value: col(C.accent) },
+    uWhite: { value: col(C.pointHi) },
+    uLayer0: { value: 1 }, uLayer1: { value: 1 }, uLayer2: { value: 1 }, uLayer3: { value: 1 },
+    uSize: { value: mobile ? 1.7 : 2.2 },
+    uPixelRatio: { value: renderer.getPixelRatio() },
   };
+  const scanMaterial = new THREE.ShaderMaterial({
+    uniforms,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.NormalBlending,
+    vertexShader: `
+      attribute vec3 aColor;
+      attribute float aLayer;
+      attribute float aGroup;
+      uniform float uSweepY, uSweepWidth, uFoundGroup;
+      uniform float uLayer0, uLayer1, uLayer2, uLayer3, uSize, uPixelRatio;
+      uniform vec3 uLime, uWhite;
+      varying vec3 vColor;
+      varying float vAlpha;
+      void main() {
+        float on = aLayer < 0.5 ? uLayer0 : (aLayer < 1.5 ? uLayer1 : (aLayer < 2.5 ? uLayer2 : uLayer3));
+        vec4 world = modelMatrix * vec4(position, 1.0);
+        float d = abs(world.y - uSweepY);
+        float lift = 1.0 - smoothstep(0.0, uSweepWidth, d);
+        float found = 1.0 - step(0.5, abs(aGroup - uFoundGroup));
+        float foundLayer = 1.0 - step(0.5, abs(aLayer - 3.0));
+        vec3 c = mix(aColor, uWhite, lift * 0.72 * (1.0 - found));
+        c = mix(c, uLime, found * (0.35 + lift * 0.65));
+        c = mix(c, uLime, foundLayer * 0.8);
+        vColor = c;
+        vec4 mv = viewMatrix * world;
+        float depth = -mv.z;
+        vAlpha = on * mix(0.3, 1.0, 1.0 - smoothstep(6.0, 22.0, depth)) * (0.55 + lift * 0.45);
+        gl_PointSize = on * clamp(uSize * uPixelRatio * (10.0 / max(depth, 0.5)), 1.0, 6.0);
+        gl_Position = projectionMatrix * mv;
+      }
+    `,
+    fragmentShader: `
+      varying vec3 vColor;
+      varying float vAlpha;
+      void main() {
+        vec2 c = gl_PointCoord - 0.5;
+        float r = dot(c, c);
+        if (r > 0.25) discard;
+        float edge = 1.0 - smoothstep(0.14, 0.25, r);
+        gl_FragColor = vec4(vColor, vAlpha * edge);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }
+    `,
+  });
+
   let seed = 7;
   const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-  for (let i = 0; i < 70; i += 1) {
-    const x = -4.4 + rnd() * 8.8;
-    const z = -3.1 + rnd() * 6.2;
-    const len = 0.4 + rnd() * 1.7;
-    if (rnd() > 0.5) pushLine(x, z, Math.min(4.6, x + len), z);
-    else pushLine(x, z, x, Math.min(3.2, z + len));
-  }
-  const rect = (cx, cz, w, d) => {
-    const a = cx - w / 2, b = cx + w / 2, c = cz - d / 2, e = cz + d / 2;
-    pushLine(a, c, b, c); pushLine(b, c, b, e); pushLine(b, e, a, e); pushLine(a, e, a, c);
-  };
-  rect(-1.4, -0.7, 2.1, 2.1);
-  rect(2.1, -1.3, 2.0, 3.0);
-  rect(0.2, 1.6, 5.4, 1.7);
-  rect(2.6, 2.0, 1.2, 2.9);
-  board.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(tracePoints), matLine));
+  const profilePoints = [];
+  const lo = col(C.pointLo), mid = col(C.pointMid), hi = col(C.pointHi);
 
-  for (const x of [-4.6, 4.6]) for (const z of [-3.2, 3.2]) {
-    mesh(board, cyl(0.12, 0.22, 16), matDark, x, 0.1, z);
-  }
-  mesh(board, box(5.4, 0.08, 0.22), matDark, 0.2, 0.13, 1.6);
-
-  /* Komponen: setiap grup menyimpan posisi asalnya */
-  const groups = {};
-  function component(name, x, y, z) {
-    const g = new THREE.Group();
-    g.position.set(x, y, z);
-    g.userData.home = { x, y, z };
-    board.add(g);
-    groups[name] = g;
-    return g;
-  }
-
-  const cpu = component('cpu', -1.4, 0.24, -0.7);
-  mesh(cpu, box(1.9, 0.12, 1.9), matDark, 0, 0, 0);
-  mesh(cpu, box(1.45, 0.10, 1.45), matMetal, 0, 0.11, 0);
-  mesh(cpu, box(0.82, 0.02, 0.82), matInk, 0, 0.17, 0);
-  for (let i = 0; i < 12; i += 1) {
-    const a = (i / 12) * Math.PI * 2;
-    mesh(cpu, cyl(0.025, 0.05, 8), matMetal, Math.cos(a) * 0.88, 0.02, Math.sin(a) * 0.88);
-  }
-
-  const cooler = component('cooler', -1.4, 0.62, -0.7);
-  const finGeo = box(1.7, 0.46, 0.045);
-  for (let i = 0; i < 9; i += 1) mesh(cooler, finGeo, matMetal, 0, 0.25, (i - 4) * 0.095);
-  mesh(cooler, cyl(0.72, 0.12, 24), matDark, 0, 0.56, 0);
-  const bladeGeo = box(0.62, 0.02, 0.14);
-  for (let i = 0; i < 6; i += 1) {
-    mesh(cooler, bladeGeo, matInk, 0, 0.63, 0, 0, (i / 6) * Math.PI * 2, 0.18);
-  }
-
-  const ram = component('ram', 2.1, 0.24, -1.3);
-  const stickGeo = box(0.22, 0.9, 2.6);
-  const spreadGeo = box(0.24, 0.74, 2.5);
-  for (let i = 0; i < 4; i += 1) {
-    const x = (i - 1.5) * 0.42;
-    mesh(ram, stickGeo, matDark, x, 0.45, 0);
-    mesh(ram, spreadGeo, matMetal, x, 0.48, 0);
-    mesh(ram, box(0.2, 0.06, 2.3), matInk, x, 0.03, 0);
-  }
-
-  const gpu = component('gpu', 0.2, 0.34, 1.6);
-  mesh(gpu, box(5.2, 0.14, 1.5), matPCB, 0, 0, 0);
-  mesh(gpu, box(5.0, 0.42, 1.35), matDark, 0, 0.28, 0);
-  mesh(gpu, box(0.12, 0.9, 1.6), matMetal, -2.65, 0.3, 0);
-  for (const fx of [-1.2, 1.2]) {
-    mesh(gpu, cyl(0.52, 0.10, 24), matMetal, fx, 0.52, 0);
-    for (let i = 0; i < 5; i += 1) {
-      mesh(gpu, box(0.46, 0.02, 0.10), matInk, fx, 0.58, 0, 0, (i / 5) * Math.PI * 2, 0.2);
+  function samplePoint(def) {
+    if (def.k === 'cyl') {
+      const a = rnd() * Math.PI * 2;
+      const y = (rnd() - 0.5) * def.h;
+      const r = def.r * (0.96 + rnd() * 0.04);
+      return [def.x + Math.cos(a) * r, def.y + y, def.z + Math.sin(a) * r];
     }
+    const face = (rnd() * 6) | 0;
+    const u = rnd() - 0.5, v = rnd() - 0.5;
+    const hw = def.w / 2, hh = def.h / 2, hd = def.d / 2;
+    if (face === 0) return [def.x + u * def.w, def.y + hh, def.z + v * def.d];
+    if (face === 1) return [def.x + u * def.w, def.y - hh, def.z + v * def.d];
+    if (face === 2) return [def.x + hw, def.y + u * def.h, def.z + v * def.d];
+    if (face === 3) return [def.x - hw, def.y + u * def.h, def.z + v * def.d];
+    if (face === 4) return [def.x + u * def.w, def.y + v * def.h, def.z + hd];
+    return [def.x + u * def.w, def.y + v * def.h, def.z - hd];
   }
 
-  const storage = component('storage', 2.6, 0.20, 2.0);
-  mesh(storage, box(0.9, 0.08, 2.6), matDark, 0, 0, 0);
-  mesh(storage, box(0.72, 0.012, 1.9), matInk, 0, 0.05, 0);
-
-  const vrm = component('vrm', -3.5, 0.26, 0.8);
-  const vrmGeo = box(0.6, 0.5, 1.1);
-  for (let i = 0; i < 3; i += 1) mesh(vrm, vrmGeo, matMetal, (i - 1) * 0.72, 0.25, 0);
-
-  const io = component('io', -4.4, 0.30, -2.4);
-  for (let i = 0; i < 3; i += 1) {
-    mesh(io, box(0.5, 0.55, 0.7), matDark, 0, 0.28, (i - 1) * 0.85);
-    mesh(io, box(0.3, 0.28, 0.5), matInk, 0.28, 0.25, (i - 1) * 0.85);
+  function scanPoints(parent, defs, count, layer, groupId, home) {
+    const pos = new Float32Array(count * 3);
+    const rgb = new Float32Array(count * 3);
+    const lay = new Float32Array(count);
+    const grp = new Float32Array(count);
+    for (let i = 0; i < count; i += 1) {
+      const p = samplePoint(defs[(rnd() * defs.length) | 0]);
+      pos.set(p, i * 3);
+      const t = Math.max(0, Math.min(1, (p[1] + home[1] + 0.2) / 1.7));
+      const c = t < 0.5 ? lo.clone().lerp(mid, t * 2) : mid.clone().lerp(hi, (t - 0.5) * 2);
+      rgb.set([c.r, c.g, c.b], i * 3);
+      lay[i] = layer;
+      grp[i] = groupId;
+      if (i % 41 === 0) profilePoints.push({ x: p[0] + home[0], y: p[1] + home[1] });
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('aColor', new THREE.BufferAttribute(rgb, 3));
+    geo.setAttribute('aLayer', new THREE.BufferAttribute(lay, 1));
+    geo.setAttribute('aGroup', new THREE.BufferAttribute(grp, 1));
+    const pts = new THREE.Points(geo, scanMaterial);
+    pts.renderOrder = 2;
+    parent.add(pts);
+    return pts;
   }
 
-  const HOME = {};
-  Object.keys(groups).forEach((k) => { HOME[k] = { ...groups[k].userData.home, rx: 0, ry: 0, rz: 0 }; });
-  const LIFT = {
-    cpu: { x: 0, y: 0.45, z: 0, rx: 0.05, ry: 0, rz: 0 },
-    cooler: { x: 0, y: 0.90, z: 0, rx: 0.05, ry: 0, rz: 0 },
-    ram: { x: 0, y: 0.70, z: 0, rx: 0, ry: 0, rz: 0.08 },
-    gpu: { x: 0, y: 0.60, z: 0.30, rx: 0.08, ry: 0, rz: 0 },
-    storage: { x: 0, y: 0.40, z: 0.20, rx: 0, ry: 0, rz: 0 },
-    vrm: { x: 0, y: 0.40, z: 0.10, rx: 0, ry: 0, rz: 0 },
-    io: { x: 0, y: 0.30, z: -0.10, rx: 0, ry: 0, rz: 0 },
-  };
-  const EXPLODE = {
-    cpu: { x: -0.5, y: 1.5, z: -0.4, rx: 0.12, ry: 0.10, rz: -0.08 },
-    cooler: { x: -0.9, y: 3.0, z: -0.8, rx: 0.18, ry: 0.14, rz: 0.12 },
-    ram: { x: 1.2, y: 1.7, z: -1.1, rx: 0.08, ry: 0.12, rz: 0.22 },
-    gpu: { x: 0.3, y: 2.1, z: 2.0, rx: 0.22, ry: 0.08, rz: 0 },
-    storage: { x: 1.6, y: 1.1, z: 2.3, rx: 0.10, ry: 0.10, rz: -0.18 },
-    vrm: { x: -1.5, y: 1.3, z: 0.7, rx: 0.10, ry: 0.08, rz: 0.10 },
-    io: { x: -1.1, y: 0.9, z: -0.9, rx: 0, ry: 0.10, rz: 0.12 },
-  };
-
-  function place(tl, t, d, map) {
-    Object.keys(map).forEach((name) => {
-      const g = groups[name];
-      const h = HOME[name];
-      const o = map[name];
-      tl.to(g.position, { x: h.x + o.x, y: h.y + o.y, z: h.z + o.z, duration: d, ease: 'none' }, t);
-      tl.to(g.rotation, { x: o.rx || 0, y: o.ry || 0, z: o.rz || 0, duration: d, ease: 'none' }, t);
+  function solidMaterial() {
+    return new THREE.MeshStandardMaterial({
+      color: col(C.paper2), roughness: 0.68, metalness: 0.38,
+      transparent: true, opacity: 0.12, depthWrite: false,
     });
   }
-  function move(tl, t, d, cam, look) {
-    tl.to(camera.position, { x: cam[0], y: cam[1], z: cam[2], duration: d, ease: 'none' }, t);
-    tl.to(target, { x: look[0], y: look[1], z: look[2], duration: d, ease: 'none' }, t);
+
+  /* Tujuh grup: papan, cpu, ram, gpu, storage, vrm, io. */
+  const DEFS = [
+    { name: 'board', home: [0, 0, 0], layer: 0, count: mobile ? 2600 : 6200, parts: [
+      { k: 'box', w: 10, h: 0.18, d: 7, x: 0, y: 0, z: 0 },
+      { k: 'box', w: 10, h: 0.02, d: 7, x: 0, y: 0.1, z: 0 },
+    ] },
+    { name: 'cpu', home: [-1.5, 0.2, -0.6], layer: 2, count: mobile ? 1300 : 3200, parts: [
+      { k: 'box', w: 2.2, h: 0.1, d: 2.2, x: 0, y: 0, z: 0 },
+      { k: 'box', w: 1.5, h: 0.08, d: 1.5, x: 0, y: 0.09, z: 0 },
+      { k: 'box', w: 1.8, h: 0.1, d: 1.8, x: 0, y: 0.2, z: 0 },
+      { k: 'box', w: 1.8, h: 0.5, d: 0.06, x: 0, y: 0.45, z: -0.5 },
+      { k: 'box', w: 1.8, h: 0.5, d: 0.06, x: 0, y: 0.45, z: -0.25 },
+      { k: 'box', w: 1.8, h: 0.5, d: 0.06, x: 0, y: 0.45, z: 0 },
+      { k: 'box', w: 1.8, h: 0.5, d: 0.06, x: 0, y: 0.45, z: 0.25 },
+      { k: 'box', w: 1.8, h: 0.5, d: 0.06, x: 0, y: 0.45, z: 0.5 },
+      { k: 'cyl', r: 0.7, h: 0.12, x: 0, y: 0.78, z: 0 },
+    ] },
+    { name: 'ram', home: [2.2, 0.15, -0.5], layer: 2, count: mobile ? 900 : 2200, parts: [
+      { k: 'box', w: 0.24, h: 1.1, d: 0.14, x: -0.55, y: 0.55, z: 0 },
+      { k: 'box', w: 0.24, h: 1.1, d: 0.14, x: -0.18, y: 0.55, z: 0 },
+      { k: 'box', w: 0.24, h: 1.1, d: 0.14, x: 0.18, y: 0.55, z: 0 },
+      { k: 'box', w: 0.24, h: 1.1, d: 0.14, x: 0.55, y: 0.55, z: 0 },
+    ] },
+    { name: 'gpu', home: [0.2, 0.25, 1.2], layer: 2, count: mobile ? 1400 : 3400, parts: [
+      { k: 'box', w: 5.4, h: 0.18, d: 1.3, x: 0, y: 0, z: 0 },
+      { k: 'box', w: 0.1, h: 0.5, d: 1.3, x: -2.7, y: 0.2, z: 0 },
+      { k: 'cyl', r: 0.45, h: 0.08, x: -1.4, y: 0.13, z: 0 },
+      { k: 'cyl', r: 0.45, h: 0.08, x: 1.4, y: 0.13, z: 0 },
+    ] },
+    { name: 'storage', home: [2.9, 0.16, 1.7], layer: 2, count: mobile ? 500 : 1200, parts: [
+      { k: 'box', w: 1.6, h: 0.08, d: 0.5, x: 0, y: 0, z: 0 },
+      { k: 'box', w: 1.6, h: 0.04, d: 0.5, x: 0, y: 0.06, z: 0 },
+    ] },
+    { name: 'vrm', home: [-3.6, 0.16, 1.2], layer: 2, count: mobile ? 500 : 1200, parts: [
+      { k: 'box', w: 0.8, h: 0.5, d: 0.8, x: -0.5, y: 0.25, z: 0 },
+      { k: 'box', w: 0.8, h: 0.5, d: 0.8, x: 0.5, y: 0.25, z: 0 },
+    ] },
+    { name: 'io', home: [-4.1, 0.2, -2.2], layer: 2, count: mobile ? 500 : 1200, parts: [
+      { k: 'box', w: 1.2, h: 0.6, d: 0.8, x: 0, y: 0.3, z: 0 },
+      { k: 'box', w: 0.3, h: 0.25, d: 0.1, x: -0.35, y: 0.3, z: -0.45 },
+      { k: 'box', w: 0.3, h: 0.25, d: 0.1, x: 0.35, y: 0.3, z: -0.45 },
+    ] },
+  ];
+
+  const groups = DEFS.map((def, index) => {
+    const g = new THREE.Group();
+    g.position.set(def.home[0], def.home[1], def.home[2]);
+    g.userData.home = def.home.slice();
+    g.userData.index = index;
+    g.userData.material = solidMaterial();
+    const mat = g.userData.material;
+    def.parts.forEach((p) => {
+      let mesh;
+      if (p.k === 'cyl') {
+        mesh = new THREE.Mesh(new THREE.CylinderGeometry(p.r, p.r, p.h, 20), mat);
+      } else {
+        mesh = new THREE.Mesh(new THREE.BoxGeometry(p.w, p.h, p.d), mat);
+      }
+      mesh.position.set(p.x, p.y, p.z);
+      mesh.castShadow = !mobile;
+      mesh.receiveShadow = true;
+      mesh.renderOrder = 1;
+      g.add(mesh);
+    });
+    rig.add(g);
+    scanPoints(g, def.parts, def.count, def.layer, index, def.home);
+    return g;
+  });
+
+  /* Jalur tembaga sebagai lapisan tersendiri, bukan jaring penghubung titik. */
+  const tracePoints = [];
+  const push = (x1, z1, x2, z2) => tracePoints.push(
+    new THREE.Vector3(x1, 0.105, z1), new THREE.Vector3(x2, 0.105, z2),
+  );
+  for (let i = 0; i < 48; i += 1) {
+    const x = -4.4 + rnd() * 8.8;
+    const z = -3.1 + rnd() * 6.2;
+    const len = 0.4 + rnd() * 1.6;
+    if (rnd() > 0.5) push(x, z, Math.min(4.6, x + len), z);
+    else push(x, z, x, Math.min(3.2, z + len));
+  }
+  const traces = new THREE.LineSegments(
+    new THREE.BufferGeometry().setFromPoints(tracePoints),
+    new THREE.LineBasicMaterial({ color: col(C.rule), transparent: true, opacity: 0.55 }),
+  );
+  rig.add(traces);
+
+  /* Titik yang ditemukan: satu lapisan lagi, selalu lime. */
+  const foundDefs = groups.map((g) => ({ k: 'box', w: 0.5, h: 0.5, d: 0.5, x: 0, y: 0.3, z: 0 }));
+  const foundGroup = new THREE.Group();
+  rig.add(foundGroup);
+  const foundPos = new Float32Array(groups.length * 3);
+  const foundRgb = new Float32Array(groups.length * 3);
+  const foundLay = new Float32Array(groups.length);
+  const foundGrp = new Float32Array(groups.length);
+  groups.forEach((g, i) => {
+    const h = g.userData.home;
+    foundPos.set([h[0], h[1] + 0.3, h[2]], i * 3);
+    foundRgb.set([mid.r, mid.g, mid.b], i * 3);
+    foundLay[i] = 3;
+    foundGrp[i] = -1;
+  });
+  const foundGeo = new THREE.BufferGeometry();
+  foundGeo.setAttribute('position', new THREE.BufferAttribute(foundPos, 3));
+  foundGeo.setAttribute('aColor', new THREE.BufferAttribute(foundRgb, 3));
+  foundGeo.setAttribute('aLayer', new THREE.BufferAttribute(foundLay, 1));
+  foundGeo.setAttribute('aGroup', new THREE.BufferAttribute(foundGrp, 1));
+  const foundPts = new THREE.Points(foundGeo, scanMaterial);
+  foundPts.renderOrder = 3;
+  foundGroup.add(foundPts);
+
+  /* Jalur kamera, sapuan dan transformasi untuk tujuh tahap. */
+  const CAM = [
+    [0, 7.5, 13.5], [-3.0, 2.8, 4.8], [2.8, 2.6, 4.4], [0.6, 2.2, 5.4],
+    [4.4, 3.0, 5.2], [0, 9.5, 15.5], [0, 6.8, 12.5],
+  ];
+  const LOOK = [
+    [0, 0.2, 0], [-1.5, 0.7, -0.6], [2.2, 0.8, -0.5], [0.2, 0.5, 1.2],
+    [2.8, 0.4, 1.2], [0, 0.9, 0], [0, 0.2, 0],
+  ];
+  const RIG = [
+    [0.02, -0.18, 0], [0.02, -0.32, 0], [0.02, 0.12, 0], [0.06, -0.05, 0],
+    [0.02, 0.28, 0], [0, 0, 0], [0.02, -0.18, 0],
+  ];
+  const FOV = [38, 34, 34, 36, 34, 42, 38];
+  const SWEEP = [-1.2, 0.2, 0.5, 0.4, 0.8, 2.2, 3.2];
+  const FOUND = [-1, 1, 2, 3, 4, -1, -1];
+  const zero = () => groups.map(() => [0, 0, 0, 0, 0]);
+  const OFF = [
+    zero(),
+    (() => { const a = zero(); a[1] = [0, 0.9, 0, 0.04, -0.05]; return a; })(),
+    (() => { const a = zero(); a[2] = [0.3, 1.0, 0, -0.05, 0.06]; return a; })(),
+    (() => { const a = zero(); a[3] = [0, 0.8, 0.4, 0.06, 0]; return a; })(),
+    (() => { const a = zero(); a[4] = [0.5, 0.7, 0.3, 0, 0.05]; a[5] = [-0.4, 0.6, 0, 0, -0.05]; a[6] = [-0.2, 0.5, -0.3, 0.04, 0]; return a; })(),
+    [
+      [0, 0, 0, 0, 0], [-1.0, 2.2, -1.0, 0.08, -0.08], [1.4, 2.6, -1.2, -0.06, 0.08],
+      [0, 1.6, 2.4, 0.05, 0], [2.0, 2.0, 1.6, 0, 0.1], [-2.2, 1.8, 1.4, 0, -0.1],
+      [-1.8, 1.4, -2.2, 0.08, 0],
+    ],
+    zero(),
+  ];
+  const ALPHA = [
+    [0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12],
+    [0.35, 0.95, 0.12, 0.12, 0.12, 0.12, 0.12],
+    [0.35, 0.8, 0.95, 0.12, 0.12, 0.12, 0.12],
+    [0.4, 0.8, 0.8, 0.95, 0.12, 0.12, 0.12],
+    [0.5, 0.8, 0.8, 0.8, 0.95, 0.9, 0.85],
+    [0.92, 0.92, 0.92, 0.92, 0.92, 0.92, 0.92],
+    [0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95],
+  ];
+
+  function key(i) {
+    const k = {
+      duration: 1, ease: 'none',
+      camX: CAM[i][0], camY: CAM[i][1], camZ: CAM[i][2],
+      lookX: LOOK[i][0], lookY: LOOK[i][1], lookZ: LOOK[i][2],
+      rigX: RIG[i][0], rigY: RIG[i][1], rigZ: RIG[i][2],
+      fov: FOV[i], sweep: SWEEP[i], found: FOUND[i],
+    };
+    OFF[i].forEach((o, j) => {
+      k['o' + j + 'x'] = o[0]; k['o' + j + 'y'] = o[1]; k['o' + j + 'z'] = o[2];
+      k['o' + j + 'rx'] = o[3]; k['o' + j + 'rz'] = o[4];
+    });
+    ALPHA[i].forEach((a, j) => { k['a' + j] = a; });
+    return k;
+  }
+  const S = {};
+  const k0 = key(0);
+  Object.keys(k0).forEach((p) => { if (p !== 'duration' && p !== 'ease') S[p] = k0[p]; });
+
+  function apply(s) {
+    camera.position.set(s.camX, s.camY, s.camZ);
+    camera.fov = s.fov;
+    camera.updateProjectionMatrix();
+    camera.lookAt(s.lookX, s.lookY, s.lookZ);
+    rig.rotation.set(s.rigX, s.rigY, s.rigZ);
+    uniforms.uSweepY.value = s.sweep;
+    uniforms.uFoundGroup.value = s.found;
+    groups.forEach((g, j) => {
+      const h = g.userData.home;
+      g.position.set(h[0] + s['o' + j + 'x'], h[1] + s['o' + j + 'y'], h[2] + s['o' + j + 'z']);
+      g.rotation.set(s['o' + j + 'rx'], 0, s['o' + j + 'rz']);
+      g.userData.material.opacity = s['a' + j];
+    });
   }
 
-  let lastIdx = -1;
-  function syncUI(p) {
-    const idx = Math.max(0, Math.min(6, Math.floor(p * 7)));
-    steps.forEach((el, i) => el.classList.toggle('is-active', i === idx));
+  const focusGroup = [groups[0], groups[1], groups[2], groups[3], groups[4], groups[0], groups[0]];
+  const projected = new THREE.Vector3();
+  let needsRender = true;
+  let tl;
+
+  function paintUI(idx, progress) {
     hudTahap.textContent = LABELS[idx];
     hudNo.textContent = String(idx).padStart(2, '0') + ' / 06';
-    hudPersen.textContent = Math.round(p * 100) + '%';
-    rail.style.transform = 'scaleY(' + Math.max(0.001, p).toFixed(4) + ')';
-    if (idx !== lastIdx) {
-      announce.textContent = 'Tahap ' + idx + ', ' + LABELS[idx];
-      lastIdx = idx;
-    }
+    hudPersen.textContent = Math.round(progress * 100) + '%';
+    rail.style.transform = 'scaleY(' + progress + ')';
+    steps.forEach((el, i) => el.classList.toggle('is-active', i === idx));
+    stageButtons.forEach((el, i) => el.classList.toggle('is-active', i === idx));
+    announce.textContent = 'Tahap ' + (idx + 1) + ' dari 7, ' + LABELS[idx];
+
+    focusGroup[idx].getWorldPosition(projected);
+    projected.project(camera);
+    const rect = canvas.getBoundingClientRect();
+    const x = rect.left + (projected.x * 0.5 + 0.5) * rect.width;
+    const y = rect.top + (-projected.y * 0.5 + 0.5) * rect.height;
+    root.style.setProperty('--cx', Math.max(0, Math.min(window.innerWidth - 200, x)) + 'px');
+    root.style.setProperty('--cy', Math.max(80, Math.min(window.innerHeight - 80, y)) + 'px');
+    calloutLabel.textContent = CALLOUT_LABELS[idx];
+    calloutFig.textContent = String(idx + 1).padStart(2, '0') + ' / 07';
   }
 
-  let needsRender = true;
-  let visible = true;
-  const observer = new IntersectionObserver(([entry]) => {
-    visible = entry.isIntersecting;
-    if (visible) needsRender = true;
-  }, { rootMargin: '200px' });
-  observer.observe(canvas);
+  function sync() {
+    const p = tl ? tl.progress() : 0;
+    const idx = Math.min(6, Math.round(p * 6));
+    apply(S);
+    paintUI(idx, p);
+    needsRender = true;
+  }
+
+  function bindLayers() {
+    document.querySelectorAll('[data-layer]').forEach((input) => {
+      const u = uniforms['uLayer' + input.dataset.layer];
+      if (!u) return;
+      u.value = input.checked ? 1 : 0;
+      input.addEventListener('change', () => {
+        u.value = input.checked ? 1 : 0;
+        needsRender = true;
+      });
+    });
+  }
+
+  function bindStages() {
+    stageButtons.forEach((btn, i) => {
+      btn.addEventListener('click', () => {
+        if (reduced || !tl || !tl.scrollTrigger) {
+          const el = document.getElementById('tahap-' + i);
+          if (el) el.scrollIntoView({ behavior: 'auto', block: 'start' });
+          return;
+        }
+        const st = tl.scrollTrigger;
+        window.scrollTo({
+          top: st.start + (st.end - st.start) * (i / 6),
+          behavior: 'smooth',
+        });
+      });
+    });
+  }
+
+  /* Potongan: titik yang sama diproyeksikan ke satu bidang 2D. */
+  function drawProfile() {
+    if (!profileCanvas) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = profileCanvas.clientWidth || 800;
+    const h = 160;
+    profileCanvas.width = Math.round(w * dpr);
+    profileCanvas.height = Math.round(h * dpr);
+    const ctx = profileCanvas.getContext('2d');
+    if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const baseY = h - 24;
+    ctx.strokeStyle = C.rule.hex;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, baseY); ctx.lineTo(w, baseY); ctx.stroke();
+
+    const pts = profilePoints.length ? profilePoints : (() => {
+      let s = 19;
+      const out = [];
+      for (let i = 0; i < 900; i += 1) {
+        s = (s * 16807) % 2147483647;
+        const r1 = s / 2147483647;
+        s = (s * 16807) % 2147483647;
+        const r2 = s / 2147483647;
+        out.push({ x: (r1 - 0.5) * 10, y: r2 * 1.3 });
+      }
+      return out;
+    })();
+    ctx.fillStyle = C.pointMid.hex;
+    pts.forEach((p) => {
+      const x = ((p.x + 5) / 10) * w;
+      const y = baseY - Math.max(0, Math.min(1, p.y / 1.5)) * (h - 40);
+      ctx.globalAlpha = 0.18 + Math.max(0, Math.min(1, p.y / 1.5)) * 0.6;
+      ctx.fillRect(x, y, 1.5, 1.5);
+    });
+    ctx.globalAlpha = 1;
+
+    ctx.strokeStyle = C.rule2.hex;
+    ctx.beginPath();
+    ctx.moveTo(w * 0.18, baseY); ctx.lineTo(w * 0.18, baseY - 26); ctx.lineTo(w * 0.3, baseY - 26);
+    ctx.moveTo(w * 0.64, baseY - 92); ctx.lineTo(w * 0.64, baseY - 26); ctx.lineTo(w * 0.76, baseY - 26);
+    ctx.stroke();
+    ctx.fillStyle = C.accent.hex;
+    ctx.fillRect(w * 0.18 - 1.5, baseY - 27.5, 3, 3);
+    ctx.fillRect(w * 0.64 - 1.5, baseY - 93.5, 3, 3);
+  }
 
   function resize() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    if (!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+    uniforms.uPixelRatio.value = renderer.getPixelRatio();
+    drawProfile();
     needsRender = true;
   }
+
+  bindLayers();
+  bindStages();
   window.addEventListener('resize', resize);
   resize();
+  apply(S);
 
   gsap.ticker.add(() => {
-    if (!visible || document.hidden || !needsRender) return;
-    camera.lookAt(target.x, target.y, target.z);
+    if (document.hidden || !needsRender) return;
     renderer.render(scene, camera);
     needsRender = false;
   });
 
   if (reduced) {
-    body.classList.add('is-static');
-    steps.forEach((el) => el.classList.add('is-active'));
-    camera.position.set(0, 7.5, 13.5);
-    target.x = 0; target.y = 0.2; target.z = 0;
-    hudTahap.textContent = LABELS[0];
-    hudNo.textContent = '00 / 06';
-    hudPersen.textContent = '0%';
-    rail.style.transform = 'scaleY(1)';
+    body.classList.add('is-reduced');
+    const k = key(6);
+    Object.keys(k).forEach((p) => { if (p !== 'duration' && p !== 'ease') S[p] = k[p]; });
+    apply(S);
+    paintUI(6, 1);
     needsRender = true;
     return;
   }
 
-  const tl = gsap.timeline({
+  tl = gsap.timeline({
     scrollTrigger: {
       trigger: '#journey',
       start: 'top top',
       end: 'bottom bottom',
       scrub: 0.8,
       invalidateOnRefresh: true,
+      onRefresh: () => { needsRender = true; },
     },
-    onUpdate: () => { needsRender = true; syncUI(tl.progress()); },
+    onUpdate: sync,
   });
-
-  tl.to(rig.rotation, { x: 0.05, y: 0.28, duration: 7, ease: 'none' }, 0);
-
-  move(tl, 1, 1, [-1.4, 3.4, 4.2], [-1.4, 0.5, -0.7]);
-  place(tl, 1, 1, { cpu: LIFT.cpu, cooler: LIFT.cooler });
-
-  move(tl, 2, 1, [2.2, 3.0, 3.8], [2.1, 0.6, -1.0]);
-  place(tl, 2, 1, { ram: LIFT.ram });
-
-  move(tl, 3, 1, [0.4, 2.6, 5.0], [0.2, 0.5, 1.6]);
-  place(tl, 3, 1, { gpu: LIFT.gpu });
-
-  move(tl, 4, 1, [3.0, 2.8, 4.6], [2.4, 0.4, 1.9]);
-  place(tl, 4, 1, { storage: LIFT.storage, vrm: LIFT.vrm, io: LIFT.io });
-
-  move(tl, 5, 1, [0, 9.5, 15.5], [0, 1.2, 0]);
-  place(tl, 5, 1, EXPLODE);
-
-  move(tl, 6, 1, [0, 6.8, 12.5], [0, 0.2, 0]);
-  place(tl, 6, 0.75, Object.fromEntries(Object.keys(HOME).map((k) => [k, { x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0 }])));
-
-  syncUI(0);
+  for (let i = 1; i <= 6; i += 1) tl.to(S, key(i), i - 1);
+  ScrollTrigger.addEventListener('refresh', () => { needsRender = true; });
+  sync();
 })();

@@ -1,72 +1,70 @@
-# Hardware Explorer: desain dan catatan teknis
+# Hardware Explorer · edisi Vantage
 
-Situs satu halaman dengan pengalaman 3D yang **benar-benar digerakkan posisi gulir**. Dibangun di atas repositori `hallmark` sebagai dasar rupa.
+Remake penuh dari Hardware Explorer. Sistem rupa, komposisi dan objek 3D diganti; **seluruh konten dan kabel tetap**: tujuh tahap edukatif, kamera yang mendekati CPU/RAM/GPU, komponen yang lepas, tampilan exploded, kembali ke posisi semula, dan penutup rakit utuh.
 
-## Tentang gambar referensi
+## Catatan gambar referensi
 
-Saya mencari berkas gambar yang diunggah terpisah di `/home/user`, `/tmp`, `/mnt/data`, `/workspace` dan di dalam repo. **Tidak ada berkas referensi baru yang ditemukan** pada sesi ini. Karena itu, sesuai permintaan pertama Anda, saya memakai dua gambar referensi yang memang ada di repositori sebagai arah visual utama:
+Sampai turn ini **tidak ada berkas gambar yang diunggah pengguna** ke workspace, meski brief awal meminta gambar referensi dipakai sebagai arahan utama. Yang tersedia hanyalah aset repo. Karena itu arahan visual diambil dari dua berkas repo, bukan dari unggahan:
 
-- `site/assets/themes/blueprint.webp`, contoh halaman tema **Blueprint**.
-- `site/assets/themes/vantage.webp`, contoh halaman tema **Vantage** dengan visualisasi teknis tiga dimensi.
-
-Keduanya dibaca ulang sebelum desain dibuat. Bila gambar referensi baru diunggah kemudian, palet, komposisi dan perlakuan cahaya bisa saya selaraskan lagi tanpa mengubah sistem gulir 3D-nya.
-
-## Analisis visual referensi
-
-| Unsur | Blueprint | Vantage | Terjemahan di Hardware Explorer |
-| --- | --- | --- | --- |
-| Gaya keseluruhan | Lembar gambar arsitektur, biru Prusia | Ruang teknis gelap, objek 3D terukur | Satu lembar biru terus-menerus, kanvas 3D tetap di belakang seluruh halaman |
-| Komposisi | Judul besar kiri, citra kanan, ruang kosong luas | Objek 3D di tengah, angka di tepi | Teks di kiri pada hero, lalu kolom kanan untuk tujuh tahap, objek 3D tetap di tengah |
-| Palet | Biru tua, tinta putih, tanpa warna kedua | Hitam, tinta putih, satu sinyal terang | `--color-paper` biru Prusia, `--color-ink` putih, garis putih sebagai satu-satunya sinyal |
-| Tipografi | Chakra Petch kapital, IBM Plex Sans, mono untuk ukuran | Grotesk teknis, angka mono | Chakra Petch 600 kapital untuk h1/h2, IBM Plex Sans untuk teks, IBM Plex Mono untuk angka |
-| Jarak dan proporsi | Keyline 1 px, sudut persegi, tanpa kartu | Grid halus, banyak ruang negatif | Satu wadah 1240 px, satu jarak kolom, garis 1 px dan 2 px, radius nol |
-| Latar | Kertas biru, garis grid gambar kerja | Gelap dengan butiran data | Grid 24 px dan 120 px pada `.backdrop`, kanvas transparan di atasnya |
-| Objek 3D | Foto cyanotype bangunan | Awan titik dan struktur 3D | Papan induk prosedural dengan CPU, pendingin, RAM, GPU, penyimpanan, regulator dan port |
-| Cahaya | Cetak cyanotype, kontras datar | Rim light pada objek | Hemisphere, satu directional key dengan bayangan, satu rim, satu fill |
-| Animasi | Hampir statis, garis boleh tergambar sekali | Objek teknis diam, data berubah | Tidak ada animasi otonom; semua perubahan berasal dari progress gulir |
-| Navigasi | Markah kata, tiga tautan, satu tombol | Bar atas ringkas | Palang atas lengket dengan markah, tiga tautan, satu tombol isi |
-| Interaksi | Tautan bergaris, tombol kotak | Angka ukur | HUD tahap, rel progress, register komponen, diagram lepas alternatif |
-
-Prinsip yang dipertahankan: **satu bidang, satu warna sinyal, tipografi teknis, keyline bukan kartu, objek menjadi pusat, teks pendek**. Yang diubah untuk konsep edukatif: objeknya bukan bangunan atau awan titik, melainkan papan induk yang bisa dibongkar; tipografi kapital dipakai hanya pada judul; angka yang ditampilkan adalah satuan adegan, bukan spesifikasi perangkat karangan.
-
-## Integrasi 3D dan gulir
-
-- **Satu kanvas tetap**, bukan beberapa section yang di-pin. `position: fixed` pada `#scene` dan `.backdrop`, konten mengalir alami di atasnya. Tidak ada `ScrollTrigger.pin`.
-- **Satu master timeline** `gsap.timeline` dengan `ScrollTrigger` `scrub: 0.8`, `trigger: #journey`, `start: 'top top'`, `end: 'bottom bottom'`.
-- Timeline menggerakkan secara bersamaan: `camera.position`, titik `lookAt`, `rig.rotation`, dan `position` + `rotation` tujuh grup komponen.
-- `onUpdate` timeline menyalakan `needsRender`, menyinkronkan kelas `.is-active` pada tujuh artikel teks, mengisi HUD, dan mengumumkan tahap lewat `aria-live`.
-
-### Jalur kamera
-
-| Tahap | Posisi kamera | Titik pandang | Kejadian pada objek |
-| --- | --- | --- | --- |
-| 00 | 0, 7.5, 13.5 | 0, 0.2, 0 | Rakit utuh |
-| 01 | -1.4, 3.4, 4.2 | -1.4, 0.5, -0.7 | CPU dan pendingin naik |
-| 02 | 2.2, 3.0, 3.8 | 2.1, 0.6, -1.0 | Memori naik |
-| 03 | 0.4, 2.6, 5.0 | 0.2, 0.5, 1.6 | Kartu grafis naik |
-| 04 | 3.0, 2.8, 4.6 | 2.4, 0.4, 1.9 | Penyimpanan, regulator, port naik |
-| 05 | 0, 9.5, 15.5 | 0, 1.2, 0 | Semua bagian ke posisi lepas, rotasi kecil |
-| 06 | 0, 6.8, 12.5 | 0, 0.2, 0 | Semua kembali ke posisi asal, papan utuh |
-
-Satuan di atas adalah satuan adegan Three.js, bukan ukuran fisik perangkat.
-
-### Objek
-
-Papan induk, jalur tembaga, lubang baut, soket, prosesor, heatsink, kipas, empat keping memori, kartu grafis dengan dua kipas, drive, blok regulator dan port belakang seluruhnya `Mesh` / `LineSegments` asli. Tidak ada gambar diam, tidak ada CSS transform yang berdiri sendiri sebagai pengganti adegan 3D. Tekstur hanya satu `CanvasTexture` grid 512 px yang dibangun di memori.
-
-## Persyaratan teknis
-
-| Persyaratan | Pemenuhan |
+| Berkas | Yang dibaca |
 | --- | --- |
-| Three.js / GLTF | Objek Three.js prosedural, `vendor/three.module.js` + `three.core.js` r0.187.0 |
-| GSAP ScrollTrigger scrub | `vendor/gsap.min.js` + `ScrollTrigger.min.js` 3.15.0, satu timeline `scrub: 0.8` |
-| Sinkronisasi kamera, objek, teks | Master timeline + `onUpdate` mengatur tujuh artikel, HUD dan `aria-live` |
-| Jalur kamera terkendali | Tujuh posisi eksplisit, `ease: 'none'`, transisi halus dari `scrub` |
-| Gulir browser alami | Tidak ada pin, tidak ada overflow bersarang, `overflow-x: clip` |
-| Pin berlebih | Nol section di-pin, satu kanvas tetap |
-| Alternatif mobile | DPR maks 1.25, antialias dan bayangan mati, layout satu kolom, register tabel dan `<details>` diagram lepas |
-| Reduced motion | `prefers-reduced-motion` mematikan timeline, menampilkan rakit utuh statis dan seluruh teks |
-| Performa | Render sesuai kebutuhan lewat `gsap.ticker`, `IntersectionObserver`, jeda saat `document.hidden`, geometri dipakai ulang, satu tekstur, tanpa berkas eksternal |
+| `skills/hallmark/references/themes/vantage.jpg` | Ground biru-hitam, point cloud objek hasil pindai, sweep yang menyalakan titik, Geologica 300 dengan sudut tajam, bingkai hairline dengan corner ticks, angka dengan satuan, satu sinyal lime untuk yang ditemukan |
+| `site/assets/themes/vantage.webp` | Tangkapan layar tema yang sama: visualisasi teknis 3D gelap, label ukur, metrik, lime hanya pada penanda |
+| `site/assets/themes/blueprint.webp` | Dipakai pada versi sebelumnya (cyanotype), sengaja ditinggalkan agar remake tidak menjadi restyle |
+
+Prinsip yang diterjemahkan: ground gelap tanpa gradien, titik tanpa garis penghubung dan tanpa bloom, tinta baja, tipografi sentence case tanpa mono, angka tabular dengan satuan, frame hanya di sudut, lime khusus untuk *ditemukan / hidup / aksi utama*. Bila gambar referensi kemudian diunggah, analisis ulang sebelum hasil dianggap final.
+
+## Arahan repo yang dijalankan
+
+| Langkah | Perintah | Hasil |
+| --- | --- | --- |
+| Deal | `theme.mjs deal --genre modern-minimal --prompt "three dimensional point cloud scan of a computer motherboard..."` | 1. Vantage · 2. Rim · 3. Cobalt |
+| Pilih | Lihat `vantage.jpg`, `rim.jpg`, `cobalt.jpg` | **Vantage**: materialnya memang pindai 3D; Rim mengandalkan foto udara, Cobalt mengandalkan lembar ASCII terang |
+| Draw | `theme.mjs draw --material product --job try --theme vantage` | `180c3e` · Narrative Workflow · hero Corridor · nav floating pill · footer statement |
+| Scaffold | `theme.mjs scaffold vantage --dealt "1/3, seed ..."` | `tokens.css` + `base.css`, stamp dan import |
+| Gates | `SKILL.md` Floor, `gates.md` § 1–4, `craft.md`, `layout.md`, `scroll-choreography.md` | satu pola gulir, bukan dua |
+
+Satu penyimpangan yang dicatat: Vantage menggerakkan awan titik dan sweep secara otonom, tetapi brief inti melarang autoplay berbasis waktu. **Sapuan dan rotasi kamera sepenuhnya digerakkan `ScrollTrigger scrub`**, sehingga aturan pengguna mengalahkan tema. Rotasi lambat otonom tidak dipakai.
+
+## Picks
+
+**Hallmark · v2.0.0**
+
+- **Redesign** · full · 1 halaman (`hardware-explorer/`) · before: cyanotype Blueprint statis, tujuh tahap
+- **Keeps** · semua tautan, `id`, handler, tujuh tahap teks, register, diagram alternatif · wiring Three.js + GSAP ScrollTrigger
+- **Files** · edit: `index.html`, `style.css`, `app.js`, `DESIGN.md`, `Hardware-Explorer-standalone.html` · create: `tokens.css`, `base.css` · delete: none
+- **Shape** · Narrative Workflow, draw `180c3e` · genre modern-minimal · job: try
+- **Theme** · Vantage, dealt 1/3 · `vantage: object/steel` · mengalahkan Rim dan Cobalt karena bendanya adalah pindai 3D, bukan foto atau field ASCII
+- **Chrome** · nav: floating pill · footer: statement
+- **Hero** · Corridor: head di lima kolom kiri, awan titik di tujuh kolom kanan, satu angka dalam corner ticks, satu callout hidup
+- **Signature** · papan induk berupa point cloud yang mengeraskan menjadi geometri padu saat gulir menjalankan sapuan lime
+- **Sections** · Hero · Penjelajahan · Lapisan · Register pindai · Potongan · Utuh kembali · Footer
+- **Material** · real: tujuh posisi kamera, tujuh grup komponen, empat lapisan titik · pictures: produk dibangun live · absent: logo, kutipan, metrik, foto stok
+- **Sweep** · `0 FAIL · 0 REFLEX · 0 WARN` (static) · `--render` tidak dijalankan
+
+## Adegan 3D
+
+| Tahap | Kamera | Fokus | Yang terjadi |
+| --- | --- | --- | --- |
+| 00 | `(0, 7.5, 13.5)` | Rakit utuh | Awan titik penuh, sapuan di bawah papan |
+| 01 | `(-3.0, 2.8, 4.8)` | CPU | Sapuan melewati soket, cpu terangkat, solid cpu mengeras |
+| 02 | `(2.8, 2.6, 4.4)` | RAM | Empat keping naik, kamera bergeser kanan |
+| 03 | `(0.6, 2.2, 5.4)` | GPU | Kartu dan dua kipas terangkat dari slot |
+| 04 | `(4.4, 3.0, 5.2)` | Daya dan simpan | Drive, regulator dan port ikut lepas |
+| 05 | `(0, 9.5, 15.5)` | Exploded | Semua grup bergerak keluar dengan rotasi kecil |
+| 06 | `(0, 6.8, 12.5)` | Assembly | Semua kembali ke `home`, papan utuh |
+
+Objeknya asli: `BoxGeometry`, `CylinderGeometry`, `LineSegments` jalur tembaga, `MeshStandardMaterial`, dan `THREE.Points` dengan `ShaderMaterial`. Tidak ada GLB, tekstur eksternal, atau gambar diam. Titik diambil dari permukaan geometri yang sama, sehingga ikut bergerak saat komponen lepas. Shader membaca `uSweepY`, `uFoundGroup` dan empat `uLayer*` dari satu timeline yang sama.
+
+## Interaksi dan akses
+
+- **Satu timeline** `gsap.timeline` dengan `ScrollTrigger` `trigger: #journey`, `start: top top`, `end: bottom bottom`, `scrub: 0.8`, `invalidateOnRefresh`, **tanpa pin**. `onUpdate` menyatukan kamera, objek, shader, HUD, rail, tujuh tombol tahap dan `aria-live`.
+- **Tombol tahap** menggulir ke progres yang bersesuaian; **empat sakelar lapisan** benar-benar menyembunyikan kelompok titik lewat uniform shader.
+- **Satu callout** mengikuti proyeksi komponen aktif: hairline, titik 3px, label, angka dengan satuan.
+- **Mobile**: DPR 1,25, jumlah titik dipangkas, antialias dan bayangan mati, kanvas penuh di belakang panel teks solid, HUD disembunyikan, tabel ditumpuk per baris, diagram `<details>` tetap ada.
+- **Reduced motion**: timeline tidak dibuat, kamera di posisi akhir, semua solid tampil, seluruh teks terbaca, callout dan isyarat gulir disembunyikan.
+- **Tanpa JS**: seluruh langkah, register dan diagram sudah terlihat di CSS dasar; kanvas hanya dekorasi.
+- **Performa**: render sesuai kebutuhan lewat `gsap.ticker`, jeda saat `document.hidden`, geometri dipakai ulang, tidak ada postprocessing/bloom, pustaka divendor lokal.
 
 ## Mutu dan cara menjalankan
 
@@ -74,34 +72,35 @@ Papan induk, jalur tembaga, lubang baut, soket, prosesor, heatsink, kipas, empat
 python3 -m http.server 4173 --bind 0.0.0.0 --directory hardware-explorer
 ```
 
-Pemeriksaan linter bawaan repo:
-
 ```sh
-node skills/hallmark/scripts/sloplint.mjs hardware-explorer/index.html hardware-explorer/style.css --genre modern-minimal
+node skills/hallmark/scripts/sloplint.mjs \
+  hardware-explorer/index.html hardware-explorer/style.css \
+  hardware-explorer/tokens.css hardware-explorer/base.css --genre modern-minimal
 ```
 
-Hasil: **0 FAIL, 0 REFLEX, 0 WARN**. Smoke test Node dengan `WebGLRenderer` bertubit juga lolos: seluruh geometri, material, pembacaan token warna, master timeline dan sinkronisasi UI terbentuk tanpa error runtime. Tingkat `--render` belum dijalankan karena sandbox tidak memiliki Chrome atau `puppeteer-core`; lipatan, kontras piksel dan fokus dengan tab perlu dicek di browser pratinjau. Font dimuat dari Google Fonts dengan fallback `ui-sans-serif`, `ui-serif`, `ui-monospace`.
+Hasil: **0 FAIL, 0 REFLEX, 0 WARN across 4 file(s)**. `node --check` lolos. Smoke test Node dengan `WebGLRenderer` bertubit lolos: geometri, shader points, master timeline, sakelar lapisan dan sinkronisasi UI terbentuk tanpa error runtime. Tingkat `--render` belum dijalankan karena sandbox tidak memiliki Chrome atau `puppeteer-core`; lipatan, kontras piksel dan fokus dengan tab perlu dicek di browser. Font Google punya fallback `ui-sans-serif`.
+
+## Akses publik
+
+Pratinjau Arena memakai host `*.e2b.app` yang tidak selalu terbuka dari jaringan pengguna, dan endpoint GitHub Pages mengembalikan `403 Resource not accessible by integration` untuk token integrasi repo ini. Jalur alternatif:
+
+1. **Halaman live tanpa unduhan**, memakai berkas mandiri:
+   `https://htmlpreview.github.io/?https://raw.githubusercontent.com/charyuseai-cmd/hallmark/refs/heads/arena/c5662565-hallmark/hardware-explorer/Hardware-Explorer-standalone.html`
+2. **Berkas untuk dibuka lokal** dari `file://`:
+   `hardware-explorer/Hardware-Explorer-standalone.html`
+3. **Versi multi-berkas** untuk di-host sendiri: folder `hardware-explorer/` atau salinan `docs/`.
+
+Berkas mandiri dibuat dengan `esbuild --bundle --format=iife`, lalu `tokens.css`, `base.css`, `style.css`, GSAP, ScrollTrigger dan bundel disisipkan ke `index.html`. Tidak ada `src`/`href` eksternal tersisa; Google Fonts sengaja dihapus agar fallback sistem bekerja luring.
 
 ## Berkas
 
 | Berkas | Isi |
 | --- | --- |
-| `index.html` | Hero, tujuh tahap teks, register, diagram alternatif, penutup |
-| `style.css` | Token Blueprint, keyline, kanvas tetap, HUD, media query, reduced motion |
-| `app.js` | Adegan Three.js, pembacaan token warna, master timeline, sinkronisasi UI |
-| `vendor/` | Three.js dan GSAP ScrollTrigger lokal, tanpa CDN |
-| `Hardware-Explorer-standalone.html` | Satu berkas mandiri: CSS, Three.js, GSAP dan `app.js` tertanam, tanpa ketergantungan jaringan; dapat dibuka lewat `file://` |
+| `index.html` | Hero, tujuh tahap, HUD, callout, sakelar, register, potongan, penutup |
+| `tokens.css` | Token Vantage dari scaffold repo plus tiga token adegan |
+| `base.css` | Aturan Floor dari scaffold repo |
+| `style.css` | Stamp, komposisi Corridor, corner ticks, kontrol, responsif, reduced motion |
+| `app.js` | Point cloud, shader sapuan, tujuh grup, master timeline, sinkronisasi UI, potongan 2D |
+| `vendor/` | Three.js 0.187.0 dan GSAP ScrollTrigger 3.15.0 lokal |
+| `Hardware-Explorer-standalone.html` | Satu berkas mandiri |
 | `DESIGN.md` | Dokumen ini |
-
-## Akses publik (media alternatif)
-
-Pratinjau Arena memakai host `*.e2b.app` yang tidak selalu dapat dibuka dari jaringan pengguna. GitHub Pages tidak dapat diaktifkan karena token integrasi repo ini mengembalikan `403 Resource not accessible by integration` pada endpoint Pages. Karena itu disediakan tiga jalur lain:
-
-1. **Halaman live tanpa unduhan** — HTML mandiri dirender lewat HTMLPreview:
-   `https://htmlpreview.github.io/?https://raw.githubusercontent.com/charyuseai-cmd/hallmark/67007729afe18dd59dff313dce92a7fe4fef811f/hardware-explorer/Hardware-Explorer-standalone.html`
-2. **Versi multi-berkas live** — disajikan CDN Statically dari commit yang sama:
-   `https://cdn.statically.io/gh/charyuseai-cmd/hallmark@67007729afe18dd59dff313dce92a7fe4fef811f/hardware-explorer/index.html`
-3. **Berkas untuk dibuka lokal** — salin `Hardware-Explorer-standalone.html`, lalu klik dua kali; atau unduh dari:
-   `https://github.com/charyuseai-cmd/hallmark/raw/refs/heads/arena/c5662565-hallmark/hardware-explorer/Hardware-Explorer-standalone.html`
-
-HTML mandiri dibuat dengan `esbuild` (`--bundle --format=iife`) dari `app.js` plus `vendor/three.module.js` dan `three.core.js`, lalu menyisipkan CSS, GSAP, ScrollTrigger dan hasil bundel ke dalam `index.html`. Tidak ada `src` atau `href` eksternal yang tersisa; Google Fonts sengaja dihapus agar fallback sistem tetap bekerja luring.

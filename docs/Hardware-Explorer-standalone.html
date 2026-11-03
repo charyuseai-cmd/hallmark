@@ -1,192 +1,283 @@
-<!-- Hardware Explorer - berkas mandiri. Semua CSS, Three.js, GSAP dan logika adegan tertulis di sini; dapat dibuka langsung lewat file:// tanpa server. -->
+<!-- Hardware Explorer, edisi Vantage. Berkas mandiri: CSS, Three.js, GSAP dan logika adegan tertanam; dapat dibuka lewat file:// tanpa server. -->
 <!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
-  <title>Hardware Explorer, penjelajahan tiga dimensi papan induk</title>
-  <meta name="description" content="Pengalaman gulir tiga dimensi yang membongkar CPU, RAM, GPU dan komponen papan induk, lalu merakitnya kembali.">
+  <title>Pindai papan induk, Hardware Explorer</title>
+  <meta name="description" content="Awan titik tiga dimensi menyusun papan induk, lalu gulir membongkar CPU, memori dan kartu grafis sebelum merakitnya kembali.">
   <link rel="icon" href="data:,">
   <style>
-/* Hallmark · shape: Photographic scroll story · genre: modern-minimal · theme: Blueprint (cyanotype) · hero: papan induk tiga dimensi di belakang kepala · nav: markah kata, tiga tautan, satu kendali · footer: sumber dan catatan gerak */
-/* Hallmark · critique: satu kanvas tetap, bukan section yang disematkan; kamera, transformasi objek dan teks digerakkan oleh satu timeline scrub, kertas biru Prusia dan garis putih tanpa warna kedua */
-/* Hallmark · answered: F7, tiga permukaan keyline memakai satu resep karena tema Blueprint melarang kartu isi dan bayangan */
-
+/* Hallmark · shape: Narrative Workflow · genre: modern-minimal · theme: Vantage (deal 1/3, seed three-dimensional-point-cloud-fdaf·713809af·2026-11-03·r0) · job: try · draw: 180c3e
+ * hero: Corridor · nav: floating pill · footer: statement · imagery: the product, a three dimensional scan · signature: a point cloud motherboard that resolves into solid components as the scroll drives a lime sweep · vantage: object/steel
+ * axes: dark/grotesk-sans/chromatic-lime · posture: restrained · contrast: pass · fold: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P5 H5 E4 S5 R4 V5 · weakest: E, the shader sweep and the layer toggles were built together so the first lint needed one fix pass */
+/* Hallmark · answered F8 · the only scroll pattern is the GSAP scrub timeline; the progress spine reads the same timeline instead of starting a second animation-timeline */
 :root {
-  --color-paper: oklch(35% 0.105 256);
-  --color-paper-2: oklch(31% 0.10 257);
-  --color-paper-3: oklch(26.5% 0.095 258);
-  --color-ink: oklch(97% 0.012 240);
-  --color-ink-2: oklch(90% 0.025 242);
-  --color-muted: oklch(80% 0.045 244);
-  --color-rule: oklch(93% 0.02 240 / 0.85);
-  --color-rule-2: oklch(93% 0.02 240 / 0.32);
-  --color-grid: oklch(97% 0.01 240 / 0.09);
-  --color-grid-2: oklch(97% 0.01 240 / 0.2);
-  --color-accent: oklch(97% 0.012 240);
-  --color-accent-ink: oklch(33% 0.105 256);
-  --color-focus: oklch(97% 0.012 240);
+  color-scheme: dark;
+  --space-3xs: 2px; --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px; --space-md: 16px; --space-lg: 24px; --space-xl: 40px; --space-2xl: 64px; --space-3xl: 96px; --space-4xl: 144px;
+  --text-xs: 0.8125rem; --text-sm: 0.875rem; --text-md: 1rem; --text-lg: 1.25rem; --text-xl: 1.5625rem; --text-2xl: 1.953rem; --text-3xl: 2.441rem;
+  --text-display-s: clamp(2.25rem, 4vw + 0.5rem, 3.75rem); --text-display: clamp(2.75rem, 5vw + 1rem, 5.25rem);
+  --text-section: clamp(2rem, 2.5vw + 1rem, 3.5rem); --text-title: clamp(1.25rem, 0.75vw + 0.875rem, 1.625rem); --text-lead: clamp(1.125rem, 0.35vw + 1rem, 1.375rem);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); --ease-in: cubic-bezier(0.7, 0, 0.84, 0); --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms; --dur-short: 220ms; --dur-long: 420ms;
+  --color-error: oklch(72% 0.15 27); --color-success: oklch(76% 0.13 150);
+  --container: 1440px; --gutter: 64px; --gap-columns: 32px; --section-gap-s: 120px; --section-gap: 144px; --section-gap-l: 176px;
+  --z-base: 1; --z-raised: 10; --z-dropdown: 100; --z-sticky: 200; --z-sticky-nav: 300; --z-modal: 400; --z-toast: 500; --z-tooltip: 600;
+  --color-paper: oklch(13.5% 0.012 235); --color-paper-2: oklch(17% 0.014 235); --color-paper-3: oklch(21% 0.016 235);
+  --color-ink: oklch(95% 0.006 230); --color-ink-2: oklch(82% 0.012 230); --color-muted: oklch(66% 0.016 230);
+  --color-rule: oklch(27% 0.014 235); --color-rule-2: oklch(34% 0.016 235);
+  --color-accent: oklch(89% 0.19 126); --color-accent-hi: oklch(93% 0.17 126); --color-accent-ink: oklch(19% 0.04 126); --color-focus: oklch(89% 0.19 126);
+  --point-lo: oklch(42% 0.04 245); --point-mid: oklch(70% 0.04 232); --point-hi: oklch(96% 0.02 215);
+  --color-slot: oklch(21% 0.016 235);
+  --font-display: "Geologica", ui-sans-serif, system-ui, sans-serif; --font-body: "Geologica", ui-sans-serif, system-ui, sans-serif;
+  --radius-card: 4px; --radius-pill: 999px; --rule-hair: 1px; --tick: 10px;
+  --shadow-card: none;
+  --tracking-display: -0.035em; --display-weight: 300;
+}
 
-  --font-display: "Chakra Petch", ui-sans-serif, sans-serif;
-  --font-body: "IBM Plex Sans", ui-sans-serif, sans-serif;
-  --font-outlier: "IBM Plex Mono", ui-monospace, monospace;
-
-  --tracking-display: -0.012em;
-  --display-weight: 600;
-  --radius-card: 0px;
-  --radius-pill: 0px;
-  --rule-hair: 1px;
-  --rule-heavy: 2px;
-  --tick: 14px;
-  --sheet-inset: 20px;
-
-  --text-h1: clamp(2.75rem, 1.6rem + 4vw, 5.25rem);
-  --text-h2: clamp(1.75rem, 1.3rem + 1.6vw, 2.75rem);
-  --text-h3: 1.25rem;
-  --text-body: 1.0625rem;
-  --text-lede: 1.1875rem;
-  --text-small: 0.9375rem;
-  --text-fine: 0.875rem;
-
-  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
-  --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px;
-
-  --container: 1240px;
-  --gutter: clamp(20px, 4vw, 48px);
-  --nav-h: 64px;
-  --dur: 220ms;
-  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+/* Hardware Explorer: tiga token tambahan untuk adegan, tetap di blok token. */
+:root {
+  --scene-w: 58%;
+  --hud-w: 216px;
+  --callout-dot: 3px;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: calc(var(--nav-h) + var(--s-4)); scrollbar-color: var(--color-rule-2) var(--color-paper); }
 html, body { overflow-x: clip; }
-body { margin: 0; background: var(--color-paper); color: var(--color-ink-2); font: 400 var(--text-body)/1.55 var(--font-body); }
-img, svg { display: block; max-width: 100%; }
-a { color: var(--color-ink); text-decoration: underline; text-decoration-color: var(--color-rule); text-underline-offset: 0.15em; }
-a:hover { text-decoration-thickness: 2px; }
-button { font: inherit; color: inherit; }
-code, .num { font-family: var(--font-outlier); font-variant-numeric: tabular-nums; }
-h1, h2, h3 { margin: 0; font-family: var(--font-display); font-weight: var(--display-weight); letter-spacing: var(--tracking-display); color: var(--color-ink); overflow-wrap: break-word; min-width: 0; text-wrap: balance; font-synthesis: none; }
-h1, h2 { text-transform: uppercase; line-height: 1.02; }
-h1 { font-size: var(--text-h1); }
-h2 { font-size: var(--text-h2); }
-h3 { font-size: var(--text-h3); }
-p { margin: 0; }
-:focus-visible { outline: var(--rule-heavy) solid var(--color-focus); outline-offset: 3px; }
-::selection { background: var(--color-ink); color: var(--color-accent-ink); }
-.skip { position: absolute; left: var(--s-4); top: -80px; z-index: 100; padding: var(--s-2) var(--s-4); background: var(--color-ink); color: var(--color-accent-ink); text-decoration: none; }
-.skip:focus { top: var(--s-4); }
+html { scrollbar-color: var(--color-muted) var(--color-paper); scroll-padding-top: var(--space-3xl); }
+body { margin: 0; background: var(--color-paper); color: var(--color-ink); font-family: var(--font-body); font-size: var(--text-md); line-height: 1.55; -webkit-font-smoothing: antialiased; caret-color: var(--color-accent); }
+::selection { background: color-mix(in oklab, var(--color-accent) 22%, transparent); color: var(--color-ink); }
+:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 0.16em; }
+h1, h2, h3 { margin: 0; font-family: var(--font-display); font-weight: var(--display-weight, 700); font-synthesis: none; letter-spacing: var(--tracking-display); line-height: 1.05; overflow-wrap: break-word; min-width: 0; text-wrap: balance; }
+h1 { max-width: 20ch; font-size: var(--text-display); } h2 { max-width: 30ch; font-size: var(--text-section); } h3 { max-width: 40ch; font-size: var(--text-title); line-height: 1.2; }
+.lead { font-size: var(--text-lead); line-height: 1.45; max-width: 52ch; }
+p { margin: 0; text-wrap: pretty; }
+p:not([class]) { max-width: 65ch; }
+img, video { max-width: 100%; height: auto; display: block; }
+svg { display: block; }
+[hidden] { display: none !important; }
+button, input, select, textarea { font: inherit; }
+.container { width: 100%; max-width: var(--container); margin-inline: auto; padding-inline: var(--gutter); box-sizing: border-box; }
+.num, .figure, td.num { font-variant-numeric: tabular-nums; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+[data-slot] { position: relative; overflow: hidden; background: linear-gradient(160deg, var(--color-paper-2, var(--color-paper)), var(--color-paper-3, var(--color-paper))); }
+[data-slot] > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+[data-slot]:has(> img) > :not(img):not([data-keep]) { display: none !important; }
+@media (max-width: 60rem) { :root { --gutter: 24px; --section-gap-s: 80px; --section-gap: 96px; --section-gap-l: 120px; } }
+@media (max-width: 40rem) { :root { --gutter: 16px; --section-gap-s: 56px; --section-gap: 72px; --section-gap-l: 96px; --gap-columns: 16px; } }
+@media (prefers-reduced-motion: reduce) { *:not(.keep-motion), *:not(.keep-motion)::before, *:not(.keep-motion)::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }
+/* photographs: muted con=6 sat=-20 */
+[data-slot] > img { filter: saturate(0.8) contrast(1.06); }
+
+
+html { scroll-behavior: smooth; }
+body { font-weight: 300; font-variation-settings: "SHRP" 0; }
+h1, h2, h3 { font-variation-settings: "SHRP" 100; }
+.num { font-weight: 400; }
+
+.skip { position: absolute; top: -80px; left: var(--space-md); z-index: var(--z-toast); padding: var(--space-sm) var(--space-md); background: var(--color-ink); color: var(--color-accent-ink); text-decoration: none; }
+.skip:focus { top: var(--space-md); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.wrap { width: 100%; max-width: calc(var(--container) + 2 * var(--gutter)); margin-inline: auto; padding-inline: var(--gutter); }
-.is-static .step { opacity: 1; }
-.is-static .cue { display: none; }
 
-/* kanvas tetap dan latar gambar kerja */
-.backdrop { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-color: var(--color-paper); background-image: linear-gradient(var(--color-grid) 1px, transparent 1px), linear-gradient(90deg, var(--color-grid) 1px, transparent 1px), linear-gradient(var(--color-grid-2) 1px, transparent 1px), linear-gradient(90deg, var(--color-grid-2) 1px, transparent 1px); background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px; background-position: var(--sheet-inset) var(--sheet-inset); }
-#scene { position: fixed; inset: 0; z-index: 1; width: 100%; height: 100%; display: block; pointer-events: none; }
-body > header, body > main, body > footer { position: relative; z-index: 2; }
+/* Ground and the one fixed scene. It never sits under running text. */
+.backdrop { position: fixed; inset: 0; z-index: var(--z-base); pointer-events: none; background: var(--color-paper); }
+#scene {
+  position: fixed; top: 0; right: 0; z-index: var(--z-base);
+  width: var(--scene-w); height: 100svh; display: block; pointer-events: none;
+  -webkit-mask-image: linear-gradient(to right, transparent, var(--color-paper) 14%);
+  mask-image: linear-gradient(to right, transparent, var(--color-paper) 14%);
+}
+body > header, body > main, body > footer { position: relative; z-index: var(--z-raised); }
 
-/* kendali */
-.btn { appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); min-height: 48px; padding: 0 var(--s-5); border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-pill); background: transparent; color: var(--color-ink); font: 500 var(--text-small)/1 var(--font-body); text-decoration: none; cursor: pointer; transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease), transform var(--dur) var(--ease); }
-.btn--primary { background: var(--color-ink); border-color: var(--color-ink); color: var(--color-accent-ink); }
-.btn--primary:hover { background: var(--color-ink-2); border-color: var(--color-ink-2); }
-.btn--line:hover { background: var(--color-paper-2); }
+/* Controls: one filled primary, one hairline pill, eight states. */
+.btn {
+  appearance: none; display: inline-flex; align-items: center; justify-content: center;
+  gap: var(--space-xs); min-height: 48px; padding: 0 var(--space-lg);
+  border: 0; border-radius: var(--radius-pill);
+  font: 400 var(--text-md)/1 var(--font-body); text-decoration: none; white-space: nowrap; cursor: pointer;
+  transition: background-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out), transform var(--dur-micro) var(--ease-out);
+}
+.btn--primary { background: var(--color-accent); color: var(--color-accent-ink); }
+.btn--primary:hover { background: var(--color-accent-hi); }
+.btn--line { background: transparent; color: var(--color-ink); box-shadow: inset 0 0 0 var(--rule-hair) var(--color-rule-2); }
+.btn--line:hover { box-shadow: inset 0 0 0 var(--rule-hair) var(--color-ink-2); }
 .btn:active { transform: translateY(1px); }
-.btn:disabled { background: var(--color-paper-3); border-color: var(--color-rule-2); color: var(--color-muted); cursor: not-allowed; }
-
-/* palang atas */
-.bar { position: sticky; top: 0; z-index: 50; background: var(--color-paper); border-bottom: var(--rule-hair) solid var(--color-rule); }
-.bar__in { display: flex; align-items: center; gap: var(--s-6); min-height: var(--nav-h); }
-.brand { display: inline-flex; align-items: baseline; gap: 0.14em; font-family: var(--font-display); font-size: 1.25rem; font-weight: var(--display-weight); letter-spacing: var(--tracking-display); color: var(--color-ink); text-decoration: none; text-transform: lowercase; }
-.brand__mark { color: var(--color-ink); }
-.bar__nav { display: flex; gap: var(--s-5); margin-left: auto; }
-.bar__nav a { font-size: var(--text-small); text-decoration: none; }
-.bar__nav a:hover { text-decoration: underline; text-decoration-thickness: 2px; }
-
-/* layar pertama */
-.hero { position: relative; min-height: 88svh; display: flex; flex-direction: column; justify-content: center; padding-block: var(--s-9) var(--s-8); }
-.hero__grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: var(--s-6); align-items: center; }
-.hero__copy { padding: var(--s-6); border: var(--rule-hair) solid var(--color-rule); background: color-mix(in oklab, var(--color-paper) 88%, transparent); }
-.hero__copy h1 { max-width: 14ch; }
-.lede { max-width: 38ch; margin-top: var(--s-5); font-size: var(--text-lede); line-height: 1.4; color: var(--color-ink-2); }
-.aksi { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-6); }
-.fine { margin-top: var(--s-5); font-size: var(--text-fine); color: var(--color-muted); }
-.hero__ukur { padding: var(--s-6); border: var(--rule-hair) solid var(--color-rule-2); background: color-mix(in oklab, var(--color-paper) 82%, transparent); }
-.dim { position: relative; height: var(--rule-hair); margin-block: var(--s-6); background: var(--color-rule); }
-.dim::before, .dim::after { content: ""; position: absolute; top: calc(var(--tick) / -2); width: var(--rule-hair); height: var(--tick); background: var(--color-rule); transform: rotate(45deg); }
-.dim::before { left: 0; }
-.dim::after { right: 0; }
-.dim .num { position: absolute; left: 50%; bottom: var(--s-3); transform: translateX(-50%); font-size: var(--text-small); color: var(--color-ink); white-space: nowrap; }
-.ukur { font-size: var(--text-small); color: var(--color-muted); }
-.ukur + .ukur { margin-top: var(--s-3); }
-.cue { margin-top: var(--s-7); text-align: center; font-size: var(--text-small); color: var(--color-muted); }
-
-/* pembacaan adegan */
-.journey { position: relative; padding-block: var(--s-8); }
-.hud { position: fixed; left: var(--gutter); bottom: var(--s-6); z-index: 3; display: grid; gap: var(--s-2); width: 190px; padding: var(--s-4); border: var(--rule-hair) solid var(--color-rule); background: color-mix(in oklab, var(--color-paper) 90%, transparent); pointer-events: none; }
-.hud__tahap { font-size: var(--text-small); color: var(--color-ink); }
-.hud__no, .hud__persen { font-size: var(--text-fine); color: var(--color-muted); }
-.rail { height: var(--rule-heavy); background: var(--color-rule-2); }
-.rail i { display: block; height: 100%; background: var(--color-ink); transform: scaleY(0); transform-origin: left center; }
-.steps { width: 100%; max-width: 46ch; margin-left: auto; counter-reset: step; }
-.step { display: flex; flex-direction: column; justify-content: center; min-height: 92svh; padding: var(--s-6); border: var(--rule-hair) solid var(--color-rule); background: color-mix(in oklab, var(--color-paper) 90%, transparent); opacity: 0.5; counter-increment: step; transition: opacity var(--dur) var(--ease), border-color var(--dur) var(--ease); }
-.step::before { content: counter(step, decimal-leading-zero); font-family: var(--font-outlier); font-size: var(--text-small); color: var(--color-ink); margin-bottom: var(--s-4); }
-.step.is-active { opacity: 1; border-color: var(--color-ink); }
-.step h2 { margin-bottom: var(--s-4); }
-.step p { font-size: var(--text-body); color: var(--color-ink-2); }
-.step .ukur { margin-top: var(--s-4); font-size: var(--text-small); color: var(--color-muted); }
-
-/* register */
-.register { padding-block: var(--s-9); background: var(--color-paper-2); border-block: var(--rule-heavy) solid var(--color-rule); }
-.kepala { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-6); align-items: end; margin-bottom: var(--s-7); }
-.kepala h2 { max-width: 20ch; }
-.kepala .lede { margin-top: 0; }
-.tabel { width: 100%; border-collapse: collapse; border-top: var(--rule-heavy) solid var(--color-ink); }
-.tabel th { font: 500 var(--text-small)/1.3 var(--font-body); color: var(--color-muted); text-align: left; padding: var(--s-3) var(--s-4); border-bottom: var(--rule-heavy) solid var(--color-ink); }
-.tabel td { padding: var(--s-3) var(--s-4); border-top: var(--rule-hair) solid var(--color-rule); font-size: var(--text-body); vertical-align: top; }
-.tabel .num { text-align: right; color: var(--color-ink); }
-.diagram { margin-top: var(--s-7); border-top: var(--rule-hair) solid var(--color-rule); padding-top: var(--s-5); }
-.diagram summary { cursor: pointer; font-size: var(--text-small); color: var(--color-ink); }
-.diagram summary:focus-visible { outline: var(--rule-heavy) solid var(--color-focus); outline-offset: 3px; }
-.diagram figure { margin: var(--s-5) 0 0; }
-.diagram svg { width: 100%; max-width: 420px; height: auto; color: var(--color-rule); }
-.diagram svg rect { fill: none; stroke: var(--color-rule); stroke-width: 1; }
-.diagram svg .dg-line { fill: none; stroke: var(--color-rule-2); stroke-width: 1; stroke-dasharray: 4 4; }
-.diagram figcaption { margin-top: var(--s-3); font-size: var(--text-small); color: var(--color-muted); }
-
-/* penutup */
-.closing { padding-block: var(--s-9); }
-.closing__in { max-width: 62ch; padding: var(--s-7); border: var(--rule-hair) solid var(--color-rule); background: color-mix(in oklab, var(--color-paper) 90%, transparent); }
-.closing .lede { margin-block: var(--s-5) var(--s-6); }
-
-/* kaki */
-.kaki { padding-block: var(--s-8); border-top: var(--rule-heavy) solid var(--color-rule); background: var(--color-paper); }
-.kaki__in { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: var(--s-6); }
-.brand--kaki { font-size: 1.375rem; }
-.kaki p { font-size: var(--text-small); color: var(--color-muted); }
-.kaki__bawah { grid-column: 1 / -1; padding-top: var(--s-4); border-top: var(--rule-hair) solid var(--color-rule); }
-
-/* layar kecil */
-@media (max-width: 900px) {
-  .hero__grid, .kepala, .kaki__in { grid-template-columns: minmax(0, 1fr); }
-  .steps { max-width: none; margin-left: 0; }
-  .kaki__bawah { grid-column: auto; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; background: var(--color-paper-3); color: var(--color-muted); }
+.btn:focus-visible, .bar__nav a:focus-visible, .brand:focus-visible, .stage:focus-visible,
+.footer__nav a:focus-visible, summary:focus-visible, .skip:focus-visible {
+  outline: 2px solid var(--color-focus); outline-offset: 2px;
 }
 
-@media (max-width: 760px) {
-  :root { --nav-h: 96px; }
-  .bar__in { flex-wrap: wrap; padding-block: var(--s-3); }
-  .bar__nav { order: 3; width: 100%; margin-left: 0; justify-content: center; }
-  .hero { min-height: 82svh; padding-block: var(--s-7) var(--s-8); }
-  .hero__ukur, .hud { display: none; }
-  .step { min-height: 84svh; padding: var(--s-5); }
-  .cue { margin-top: var(--s-5); }
+/* Floating pill nav. */
+.bar { position: sticky; top: var(--space-md); z-index: var(--z-sticky-nav); }
+.bar__in {
+  display: flex; align-items: center; gap: var(--space-lg); min-height: 56px;
+  padding-inline: var(--space-lg); border: var(--rule-hair) solid var(--color-rule-2);
+  border-radius: var(--radius-pill); background: var(--color-paper);
+}
+.brand { display: inline-flex; align-items: baseline; gap: var(--space-2xs); font: 400 var(--text-lg)/1 var(--font-display); color: var(--color-ink); text-decoration: none; }
+.brand__mark { color: var(--color-ink-2); }
+.bar__nav { display: flex; gap: var(--space-lg); margin-left: auto; }
+.bar__nav a { font-size: var(--text-sm); color: var(--color-ink-2); text-decoration: none; transition: color var(--dur-micro) var(--ease-out); }
+.bar__nav a:hover { color: var(--color-ink); text-decoration: underline; }
+
+/* Corridor hero: head on five columns, the measured thing on seven. */
+.hero { min-height: 92svh; display: flex; flex-direction: column; justify-content: center; padding-block: var(--space-3xl) var(--space-2xl); }
+.hero__grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--gap-columns); align-items: center; }
+.hero__copy h1 { max-width: 18ch; }
+.lead { color: var(--color-ink-2); max-width: 46ch; }
+.aksi { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-top: var(--space-xl); }
+.fine { margin-top: var(--space-lg); font-size: var(--text-sm); color: var(--color-muted); }
+.hero__ukur {
+  justify-self: end; align-self: end; width: min(100%, 22ch); padding: var(--space-lg);
+  background: var(--color-paper); color: var(--color-ink);
+}
+.figure { font-size: var(--text-display); font-weight: 300; line-height: 1; font-variation-settings: "SHRP" 100; color: var(--color-ink); font-variant-numeric: tabular-nums; }
+.ukur { font-size: var(--text-sm); color: var(--color-muted); }
+.cue { margin-top: var(--space-2xl); text-align: center; font-size: var(--text-sm); color: var(--color-muted); }
+
+/* Frames drawn only at their corners. */
+.ticks { position: relative; }
+.ticks::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  border: var(--rule-hair) solid var(--color-rule-2);
+  -webkit-mask: conic-gradient(at var(--tick) var(--tick), transparent 75%, var(--color-ink) 0) 0 0 / calc(100% - var(--tick)) calc(100% - var(--tick));
+  mask: conic-gradient(at var(--tick) var(--tick), transparent 75%, var(--color-ink) 0) 0 0 / calc(100% - var(--tick)) calc(100% - var(--tick));
+}
+
+/* The live callout: one measured point, one leader, one figure. */
+.callout {
+  position: fixed; top: 0; left: 0; z-index: var(--z-raised); pointer-events: none;
+  transform: translate3d(var(--cx, 62vw), var(--cy, 42svh), 0);
+  display: flex; align-items: flex-start; gap: var(--space-xs);
+  color: var(--color-ink-2); font-size: var(--text-sm);
+}
+.callout__dot { flex: 0 0 auto; width: var(--callout-dot); height: var(--callout-dot); margin-top: var(--space-xs); border-radius: var(--radius-pill); background: var(--color-accent); }
+.callout__line { flex: 0 0 auto; width: var(--space-2xl); height: var(--rule-hair); margin-top: var(--space-sm); background: var(--color-rule-2); }
+.callout__label, .callout__fig { white-space: nowrap; }
+.callout__fig { color: var(--color-accent); }
+
+/* A quiet instrument column over the right edge of the cloud. */
+.hud {
+  position: fixed; right: 0; top: 50%; z-index: var(--z-raised);
+  transform: translateY(-50%); width: var(--hud-w); padding: var(--space-lg);
+  background: var(--color-paper);
+}
+.hud__tahap { font-size: var(--text-sm); color: var(--color-ink-2); }
+.hud__no, .hud__persen { font-size: var(--text-sm); color: var(--color-muted); }
+.rail { position: relative; width: 2px; height: var(--space-3xl); margin-block: var(--space-md); background: var(--color-rule); }
+.rail i { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--color-accent); transform: scaleY(0); transform-origin: top; }
+.hud__stages { list-style: none; margin: 0; padding: 0; }
+.stage {
+  appearance: none; display: block; width: 100%; padding: var(--space-2xs) 0;
+  border: 0; background: transparent; text-align: left; white-space: nowrap;
+  font: 400 var(--text-sm)/1.4 var(--font-body); color: var(--color-muted); cursor: pointer;
+  transition: color var(--dur-micro) var(--ease-out);
+}
+.stage:hover { color: var(--color-ink-2); }
+.stage:active { color: var(--color-ink); }
+.stage.is-active { color: var(--color-accent); }
+.stage:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Seven stages on the left, the cloud holding the right. */
+.section-head { margin-bottom: var(--space-2xl); }
+.section-lead { margin-top: var(--space-sm); font-size: var(--text-lead); color: var(--color-muted); max-width: 52ch; }
+.steps { width: min(100%, 46ch); }
+.step {
+  min-height: 62svh; display: flex; flex-direction: column; justify-content: center;
+  padding-inline: var(--space-md); border-top: var(--rule-hair) solid var(--color-rule);
+  transition: background-color var(--dur-short) var(--ease-out);
+}
+.step.is-active { background: var(--color-paper-2); }
+.step h3 { font-size: var(--text-title); }
+.step p { max-width: 46ch; color: var(--color-ink-2); }
+.step .ukur { margin-top: var(--space-sm); }
+.journey, .layers, .register, .cut { padding-block: var(--section-gap-s); }
+
+/* Working layer switches. */
+.layers__grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--gap-columns); align-items: start; }
+.switches { list-style: none; margin: 0; padding: 0; }
+.switches li { border-top: var(--rule-hair) solid var(--color-rule); }
+.switches li:last-child { border-bottom: var(--rule-hair) solid var(--color-rule); }
+.switch { display: flex; align-items: center; gap: var(--space-md); min-height: 52px; cursor: pointer; }
+.switch input { appearance: none; position: absolute; width: 1px; height: 1px; opacity: 0; }
+.switch__track {
+  position: relative; flex: 0 0 auto; width: 44px; height: 26px; border-radius: var(--radius-pill);
+  background: var(--color-paper-3); box-shadow: inset 0 0 0 var(--rule-hair) var(--color-rule-2);
+  transition: background-color var(--dur-short) var(--ease-out);
+}
+.switch__knob {
+  position: absolute; top: var(--space-2xs); left: var(--space-2xs); width: 20px; height: 20px;
+  border-radius: var(--radius-pill); background: var(--color-ink-2); transform: translateX(0);
+  transition: transform var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out);
+}
+.switch input:checked + .switch__track { background: var(--color-accent); }
+.switch input:checked + .switch__track .switch__knob { transform: translateX(18px); background: var(--color-accent-ink); }
+.switch input:focus-visible + .switch__track { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.switch input:active + .switch__track .switch__knob { transform: translateX(9px); }
+.switch input:disabled + .switch__track { opacity: 0.55; cursor: not-allowed; }
+.switch:has(input:disabled) { cursor: not-allowed; }
+.switch__text { display: flex; flex-direction: column; color: var(--color-ink-2); font-size: var(--text-md); }
+.switch__hint { min-height: 1lh; font-size: var(--text-sm); color: var(--color-muted); }
+.layers__note { padding: var(--space-lg); background: var(--color-paper); }
+
+/* Scan log: horizontal rules only, no outer frame. */
+.tabel { width: 100%; border-collapse: collapse; }
+.tabel th, .tabel td { padding: var(--space-sm) var(--space-xs); border-bottom: var(--rule-hair) solid var(--color-rule); text-align: left; }
+.tabel th { font-weight: 400; font-size: var(--text-sm); color: var(--color-muted); white-space: nowrap; }
+.tabel td { font-size: var(--text-md); color: var(--color-ink-2); }
+.tabel td.num { color: var(--color-ink); }
+.diagram { margin-top: var(--space-2xl); }
+.diagram summary { cursor: pointer; color: var(--color-ink-2); font-size: var(--text-sm); }
+.diagram figure { margin: var(--space-lg) 0 0; }
+.diagram svg { width: min(100%, 420px); height: auto; }
+.diagram rect { fill: none; stroke: var(--color-rule-2); stroke-width: 1; }
+.diagram .dg-line { fill: none; stroke: var(--color-muted); stroke-width: 1; }
+.diagram figcaption { margin-top: var(--space-sm); font-size: var(--text-sm); color: var(--color-muted); }
+
+/* A thin section cut of the same measured points. */
+.cut__fig { margin: 0; padding-top: var(--space-lg); border-top: var(--rule-hair) solid var(--color-rule); }
+#profile { display: block; width: 100%; height: 160px; }
+.cut__fig figcaption { display: flex; flex-wrap: wrap; gap: var(--space-xl); margin-top: var(--space-sm); font-size: var(--text-sm); color: var(--color-muted); }
+.cut__callout .num { color: var(--color-ink-2); }
+
+/* Statement close. */
+.closing { padding-block: var(--section-gap); }
+.closing__in { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-lg); }
+.closing .lead { max-width: 44ch; }
+.footer { border-top: var(--rule-hair) solid var(--color-rule); padding-block: var(--space-2xl); }
+.footer__in { display: flex; align-items: center; gap: var(--space-xl); }
+.footer__in > p:nth-child(2) { max-width: 52ch; color: var(--color-muted); font-size: var(--text-sm); }
+.footer__nav { display: flex; gap: var(--space-lg); margin-left: auto; }
+.footer__nav a { font-size: var(--text-sm); color: var(--color-ink-2); text-decoration: none; }
+.footer__nav a:hover { text-decoration: underline; }
+
+.is-static .cue, .is-reduced .cue, .is-reduced .callout { display: none; }
+
+@media (max-width: 60rem) {
+  :root { --scene-w: 100%; }
+  .bar__nav { display: none; }
+  .hud, .callout { display: none; }
+  .hero__copy, .hero__ukur, .step, .section-head, .tabel, .switches, .layers__note, .cut__fig, .closing__in, .footer__in { background: var(--color-paper); color: var(--color-ink); }
+  .layers__grid { grid-template-columns: minmax(0, 1fr); }
+  .footer__in { flex-direction: column; align-items: flex-start; }
+  .footer__nav { margin-left: 0; }
+}
+
+@media (max-width: 40rem) {
+  .hero__grid { grid-template-columns: minmax(0, 1fr); }
+  .hero__ukur { justify-self: start; }
+  .tabel thead { display: none; }
+  .tabel tr { display: block; border-bottom: var(--rule-hair) solid var(--color-rule); padding-block: var(--space-sm); }
+  .tabel td { display: flex; justify-content: space-between; gap: var(--space-sm); border: 0; padding: var(--space-2xs) 0; }
+  .tabel td::before { content: attr(data-label); color: var(--color-muted); font-size: var(--text-sm); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition-duration: 0.01ms; animation-duration: 0.01ms; animation-iteration-count: 1; scroll-behavior: auto; }
+  .btn, .stage, .switch__track, .switch__knob, .bar__nav a, .step { transition: none; }
 }
 
 </style>
@@ -220,7 +311,7 @@ body > header, body > main, body > footer { position: relative; z-index: 2; }
 </script>
   <script>
 (() => {
-  // ../../home/user/hallmark/hardware-explorer/vendor/three.core.js
+  // hardware-explorer/vendor/three.core.js
   var REVISION = "187";
   var CullFaceNone = 0;
   var CullFaceBack = 1;
@@ -13112,6 +13203,167 @@ body > header, body > main, body > footer { position: relative; z-index: 2; }
       return this;
     }
   };
+  var PointsMaterial = class extends Material {
+    /**
+     * Constructs a new points material.
+     *
+     * @param {Object} [parameters] - An object with one or more properties
+     * defining the material's appearance. Any property of the material
+     * (including any property from inherited materials) can be passed
+     * in here. Color values can be passed any type of value accepted
+     * by {@link Color#set}.
+     */
+    constructor(parameters) {
+      super();
+      this.isPointsMaterial = true;
+      this.type = "PointsMaterial";
+      this.color = new Color(16777215);
+      this.map = null;
+      this.alphaMap = null;
+      this.size = 1;
+      this.sizeAttenuation = true;
+      this.fog = true;
+      this.setValues(parameters);
+    }
+    copy(source) {
+      super.copy(source);
+      this.color.copy(source.color);
+      this.map = source.map;
+      this.alphaMap = source.alphaMap;
+      this.size = source.size;
+      this.sizeAttenuation = source.sizeAttenuation;
+      this.fog = source.fog;
+      return this;
+    }
+  };
+  var _inverseMatrix = /* @__PURE__ */ new Matrix4();
+  var _ray = /* @__PURE__ */ new Ray();
+  var _sphere = /* @__PURE__ */ new Sphere();
+  var _position$3 = /* @__PURE__ */ new Vector3();
+  var Points = class extends Object3D {
+    /**
+     * Constructs a new point cloud.
+     *
+     * @param {BufferGeometry} [geometry] - The points geometry.
+     * @param {Material|Array<Material>} [material] - The points material.
+     */
+    constructor(geometry = new BufferGeometry(), material = new PointsMaterial()) {
+      super();
+      this.isPoints = true;
+      this.type = "Points";
+      this.geometry = geometry;
+      this.material = material;
+      this.morphTargetDictionary = void 0;
+      this.morphTargetInfluences = void 0;
+      this.updateMorphTargets();
+    }
+    copy(source, recursive) {
+      super.copy(source, recursive);
+      if (source.morphTargetInfluences !== void 0) {
+        this.morphTargetInfluences = source.morphTargetInfluences.slice();
+      } else {
+        this.morphTargetInfluences = void 0;
+      }
+      if (source.morphTargetDictionary !== void 0) {
+        this.morphTargetDictionary = Object.assign({}, source.morphTargetDictionary);
+      } else {
+        this.morphTargetDictionary = void 0;
+      }
+      this.material = Array.isArray(source.material) ? source.material.slice() : source.material;
+      this.geometry = source.geometry;
+      return this;
+    }
+    /**
+     * Returns `true` if this point cloud intersects the given frustum.
+     *
+     * @param {Frustum|FrustumArray} frustum - The frustum to test.
+     * @return {boolean} Whether this point cloud intersects the given frustum or not.
+     */
+    intersectsFrustum(frustum) {
+      return frustum.intersectsObject(this);
+    }
+    /**
+     * Computes intersection points between a casted ray and this point cloud.
+     *
+     * @param {Raycaster} raycaster - The raycaster.
+     * @param {Array<Object>} intersects - The target array that holds the intersection points.
+     */
+    raycast(raycaster, intersects) {
+      const geometry = this.geometry;
+      const matrixWorld = this.matrixWorld;
+      const threshold = raycaster.params.Points.threshold;
+      const drawRange = geometry.drawRange;
+      if (geometry.boundingSphere === null) geometry.computeBoundingSphere();
+      _sphere.copy(geometry.boundingSphere);
+      _sphere.applyMatrix4(matrixWorld);
+      _sphere.radius += threshold;
+      if (raycaster.ray.intersectsSphere(_sphere) === false) return;
+      _inverseMatrix.copy(matrixWorld).invert();
+      _ray.copy(raycaster.ray).applyMatrix4(_inverseMatrix);
+      const localThreshold = threshold / ((this.scale.x + this.scale.y + this.scale.z) / 3);
+      const localThresholdSq = localThreshold * localThreshold;
+      const index = geometry.index;
+      const attributes = geometry.attributes;
+      const positionAttribute = attributes.position;
+      if (index !== null) {
+        const start = Math.max(0, drawRange.start);
+        const end = Math.min(index.count, drawRange.start + drawRange.count);
+        for (let i = start, il = end; i < il; i++) {
+          const a = index.getX(i);
+          _position$3.fromBufferAttribute(positionAttribute, a);
+          testPoint(_position$3, a, localThresholdSq, matrixWorld, raycaster, intersects, this);
+        }
+      } else {
+        const start = Math.max(0, drawRange.start);
+        const end = Math.min(positionAttribute.count, drawRange.start + drawRange.count);
+        for (let i = start, l = end; i < l; i++) {
+          _position$3.fromBufferAttribute(positionAttribute, i);
+          testPoint(_position$3, i, localThresholdSq, matrixWorld, raycaster, intersects, this);
+        }
+      }
+    }
+    /**
+     * Sets the values of {@link Points#morphTargetDictionary} and {@link Points#morphTargetInfluences}
+     * to make sure existing morph targets can influence this 3D object.
+     */
+    updateMorphTargets() {
+      const geometry = this.geometry;
+      const morphAttributes = geometry.morphAttributes;
+      const keys = Object.keys(morphAttributes);
+      if (keys.length > 0) {
+        const morphAttribute = morphAttributes[keys[0]];
+        if (morphAttribute !== void 0) {
+          this.morphTargetInfluences = [];
+          this.morphTargetDictionary = {};
+          for (let m = 0, ml = morphAttribute.length; m < ml; m++) {
+            const name = morphAttribute[m].name || String(m);
+            this.morphTargetInfluences.push(0);
+            this.morphTargetDictionary[name] = m;
+          }
+        }
+      }
+    }
+  };
+  function testPoint(point, index, localThresholdSq, matrixWorld, raycaster, intersects, object) {
+    const rayPointDistanceSq = _ray.distanceSqToPoint(point);
+    if (rayPointDistanceSq < localThresholdSq) {
+      const intersectPoint = new Vector3();
+      _ray.closestPointToPoint(point, intersectPoint);
+      intersectPoint.applyMatrix4(matrixWorld);
+      const distance = raycaster.ray.origin.distanceTo(intersectPoint);
+      if (distance < raycaster.near || distance > raycaster.far) return;
+      intersects.push({
+        distance,
+        distanceToRay: Math.sqrt(rayPointDistanceSq),
+        point: intersectPoint,
+        index,
+        face: null,
+        faceIndex: null,
+        barycoord: null,
+        object
+      });
+    }
+  }
   var CubeTexture = class extends Texture {
     /**
      * Constructs a new cube texture.
@@ -13142,26 +13394,6 @@ body > header, body > main, body > footer { position: relative; z-index: 2; }
     }
     set images(value) {
       this.image = value;
-    }
-  };
-  var CanvasTexture = class extends Texture {
-    /**
-     * Constructs a new texture.
-     *
-     * @param {HTMLCanvasElement} [canvas] - The HTML canvas element.
-     * @param {number} [mapping=Texture.DEFAULT_MAPPING] - The texture mapping.
-     * @param {number} [wrapS=ClampToEdgeWrapping] - The wrapS value.
-     * @param {number} [wrapT=ClampToEdgeWrapping] - The wrapT value.
-     * @param {number} [magFilter=LinearFilter] - The mag filter value.
-     * @param {number} [minFilter=LinearMipmapLinearFilter] - The min filter value.
-     * @param {number} [format=RGBAFormat] - The texture format.
-     * @param {number} [type=UnsignedByteType] - The texture type.
-     * @param {number} [anisotropy=Texture.DEFAULT_ANISOTROPY] - The anisotropy value.
-     */
-    constructor(canvas, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy) {
-      super(canvas, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy);
-      this.isCanvasTexture = true;
-      this.needsUpdate = true;
     }
   };
   var DepthTexture = class extends Texture {
@@ -16577,7 +16809,7 @@ body > header, body > main, body > footer { position: relative; z-index: 2; }
     }
   }
 
-  // ../../home/user/hallmark/hardware-explorer/vendor/three.module.js
+  // hardware-explorer/vendor/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -27963,7 +28195,7 @@ void main() {
     }
   };
 
-  // ../../home/user/hallmark/hardware-explorer/app.js
+  // hardware-explorer/app.js
   (() => {
     "use strict";
     const gsap = window.gsap;
@@ -27973,23 +28205,37 @@ void main() {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const mobile = window.matchMedia("(max-width: 760px)").matches;
     const canvas = document.getElementById("scene");
+    const profileCanvas = document.getElementById("profile");
     const body = document.body;
+    const root = document.documentElement;
     const steps = Array.from(document.querySelectorAll(".step"));
+    const stageButtons = Array.from(document.querySelectorAll(".stage"));
     const hudTahap = document.querySelector("[data-hud-tahap]");
     const hudNo = document.querySelector("[data-hud-no]");
     const hudPersen = document.querySelector("[data-hud-persen]");
     const rail = document.querySelector("[data-rail]");
     const announce = document.querySelector("[data-announce]");
+    const calloutLabel = document.querySelector("[data-callout-label]");
+    const calloutFig = document.querySelector("[data-callout-fig]");
     const LABELS = [
       "Rakit utuh",
       "Unit pemroses",
       "Memori",
       "Grafis",
-      "Penyimpanan dan daya",
+      "Daya dan simpan",
       "Tampilan lepas",
-      "Kembali dan rakit utuh"
+      "Utuh kembali"
     ];
-    const rootStyle = getComputedStyle(document.documentElement);
+    const CALLOUT_LABELS = [
+      "Soket prosesor",
+      "Soket prosesor",
+      "Keping memori",
+      "Kartu grafis",
+      "Drive dan regulator",
+      "Peta letak lepas",
+      "Papan utuh"
+    ];
+    const rootStyle = getComputedStyle(root);
     function oklchToHex(L, C2, H) {
       const h = H * Math.PI / 180;
       const a = C2 * Math.cos(h);
@@ -28013,7 +28259,7 @@ void main() {
       const H = parseFloat(m[3]);
       let alpha = 1;
       if (m[4]) alpha = m[4].endsWith("%") ? parseFloat(m[4]) / 100 : parseFloat(m[4]);
-      return { hex: oklchToHex(L, C2, H), alpha: Math.min(1, Math.max(0, alpha)) };
+      return { hex: oklchToHex(L, C2, H), alpha };
     }
     const C = {
       paper: token("--color-paper"),
@@ -28024,9 +28270,12 @@ void main() {
       muted: token("--color-muted"),
       rule: token("--color-rule"),
       rule2: token("--color-rule-2"),
-      grid: token("--color-grid"),
-      grid2: token("--color-grid-2")
+      accent: token("--color-accent"),
+      pointLo: token("--point-lo"),
+      pointMid: token("--point-mid"),
+      pointHi: token("--point-hi")
     };
+    const col = (t) => new Color(t.hex);
     let renderer;
     try {
       renderer = new WebGLRenderer({
@@ -28037,302 +28286,546 @@ void main() {
       });
     } catch (err) {
       body.classList.add("is-static");
+      drawProfile();
       return;
     }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.75));
-    renderer.setClearColor(new Color(C.paper3.hex), 0);
+    renderer.setClearColor(col(C.paper), 0);
     renderer.outputColorSpace = SRGBColorSpace;
     renderer.toneMapping = ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.08;
+    renderer.toneMappingExposure = 1.04;
     renderer.shadowMap.enabled = !mobile;
     renderer.shadowMap.type = PCFSoftShadowMap;
     const scene = new Scene();
-    scene.fog = new FogExp2(new Color(C.paper3.hex), 0.012);
-    const camera = new PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 100);
+    scene.fog = new FogExp2(col(C.paper), 0.011);
+    const camera = new PerspectiveCamera(38, 1, 0.1, 100);
     camera.position.set(0, 7.5, 13.5);
-    const target = { x: 0, y: 0.2, z: 0 };
-    const hemi = new HemisphereLight(new Color(C.ink.hex), new Color(C.paper3.hex), 1.5);
+    const hemi = new HemisphereLight(col(C.ink), col(C.paper3), 1.35);
     scene.add(hemi);
-    const key = new DirectionalLight(new Color(C.ink.hex), 2.4);
-    key.position.set(-5, 10, 7);
-    key.castShadow = !mobile;
-    key.shadow.mapSize.set(1024, 1024);
-    key.shadow.camera.left = -9;
-    key.shadow.camera.right = 9;
-    key.shadow.camera.top = 9;
-    key.shadow.camera.bottom = -9;
-    key.shadow.camera.near = 1;
-    key.shadow.camera.far = 30;
-    scene.add(key);
-    const rim = new DirectionalLight(new Color(C.muted.hex), 1.3);
+    const keyLight = new DirectionalLight(col(C.ink), 2.1);
+    keyLight.position.set(-5, 10, 7);
+    keyLight.castShadow = !mobile;
+    keyLight.shadow.mapSize.set(1024, 1024);
+    keyLight.shadow.camera.left = -9;
+    keyLight.shadow.camera.right = 9;
+    keyLight.shadow.camera.top = 9;
+    keyLight.shadow.camera.bottom = -9;
+    keyLight.shadow.camera.near = 1;
+    keyLight.shadow.camera.far = 30;
+    scene.add(keyLight);
+    const rim = new DirectionalLight(col(C.muted), 1.1);
     rim.position.set(7, 5, -9);
     scene.add(rim);
-    const fill = new PointLight(new Color(C.paper2.hex), 18, 28);
+    const fill = new PointLight(col(C.pointMid), 14, 28);
     fill.position.set(2, 4, 6);
     scene.add(fill);
-    const matPCB = new MeshStandardMaterial({ color: C.paper3.hex, roughness: 0.86, metalness: 0.14 });
-    const matDark = new MeshStandardMaterial({ color: C.paper3.hex, roughness: 0.62, metalness: 0.3 });
-    const matInk = new MeshStandardMaterial({ color: C.ink.hex, roughness: 0.38, metalness: 0.5 });
-    const matMetal = new MeshStandardMaterial({ color: C.muted.hex, roughness: 0.3, metalness: 0.78 });
-    const matLine = new LineBasicMaterial({ color: C.rule.hex, transparent: true, opacity: C.rule.alpha });
-    function gridTexture() {
-      const size = 512;
-      const c = document.createElement("canvas");
-      c.width = c.height = size;
-      const ctx = c.getContext("2d");
-      ctx.fillStyle = C.paper2.hex;
-      ctx.fillRect(0, 0, size, size);
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = C.grid.hex;
-      ctx.globalAlpha = C.grid.alpha;
-      for (let i = 0; i <= size; i += 32) {
-        ctx.beginPath();
-        ctx.moveTo(i, 0);
-        ctx.lineTo(i, size);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(0, i);
-        ctx.lineTo(size, i);
-        ctx.stroke();
-      }
-      ctx.strokeStyle = C.grid2.hex;
-      ctx.globalAlpha = C.grid2.alpha;
-      for (let i = 0; i <= size; i += 128) {
-        ctx.beginPath();
-        ctx.moveTo(i, 0);
-        ctx.lineTo(i, size);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(0, i);
-        ctx.lineTo(size, i);
-        ctx.stroke();
-      }
-      const t = new CanvasTexture(c);
-      t.colorSpace = SRGBColorSpace;
-      t.wrapS = t.wrapT = RepeatWrapping;
-      t.repeat.set(2.5, 1.75);
-      t.anisotropy = 4;
-      return t;
-    }
-    const matSurface = new MeshStandardMaterial({ map: gridTexture(), roughness: 0.92, metalness: 0.06 });
     const rig = new Group();
     rig.rotation.set(0.02, -0.18, 0);
     scene.add(rig);
-    const board = new Group();
-    rig.add(board);
-    function mesh(parent, geo, mat, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) {
-      const m = new Mesh(geo, mat);
-      m.position.set(x, y, z);
-      m.rotation.set(rx, ry, rz);
-      m.castShadow = !mobile;
-      m.receiveShadow = true;
-      parent.add(m);
-      return m;
-    }
-    const box = (w, h, d) => new BoxGeometry(w, h, d);
-    const cyl = (r, h, seg = 20) => new CylinderGeometry(r, r, h, seg);
-    mesh(board, box(10, 0.18, 7), matPCB, 0, 0, 0);
-    const top = mesh(board, new PlaneGeometry(10, 7), matSurface, 0, 0.095, 0, -Math.PI / 2, 0, 0);
-    top.castShadow = false;
-    const tracePoints = [];
-    const pushLine = (x1, z1, x2, z2) => {
-      tracePoints.push(new Vector3(x1, 0.102, z1), new Vector3(x2, 0.102, z2));
+    const uniforms = {
+      uSweepY: { value: -1.2 },
+      uSweepWidth: { value: 0.55 },
+      uFoundGroup: { value: -1 },
+      uLime: { value: col(C.accent) },
+      uWhite: { value: col(C.pointHi) },
+      uLayer0: { value: 1 },
+      uLayer1: { value: 1 },
+      uLayer2: { value: 1 },
+      uLayer3: { value: 1 },
+      uSize: { value: mobile ? 1.7 : 2.2 },
+      uPixelRatio: { value: renderer.getPixelRatio() }
     };
+    const scanMaterial = new ShaderMaterial({
+      uniforms,
+      transparent: true,
+      depthWrite: false,
+      blending: NormalBlending,
+      vertexShader: `
+      attribute vec3 aColor;
+      attribute float aLayer;
+      attribute float aGroup;
+      uniform float uSweepY, uSweepWidth, uFoundGroup;
+      uniform float uLayer0, uLayer1, uLayer2, uLayer3, uSize, uPixelRatio;
+      uniform vec3 uLime, uWhite;
+      varying vec3 vColor;
+      varying float vAlpha;
+      void main() {
+        float on = aLayer < 0.5 ? uLayer0 : (aLayer < 1.5 ? uLayer1 : (aLayer < 2.5 ? uLayer2 : uLayer3));
+        vec4 world = modelMatrix * vec4(position, 1.0);
+        float d = abs(world.y - uSweepY);
+        float lift = 1.0 - smoothstep(0.0, uSweepWidth, d);
+        float found = 1.0 - step(0.5, abs(aGroup - uFoundGroup));
+        float foundLayer = 1.0 - step(0.5, abs(aLayer - 3.0));
+        vec3 c = mix(aColor, uWhite, lift * 0.72 * (1.0 - found));
+        c = mix(c, uLime, found * (0.35 + lift * 0.65));
+        c = mix(c, uLime, foundLayer * 0.8);
+        vColor = c;
+        vec4 mv = viewMatrix * world;
+        float depth = -mv.z;
+        vAlpha = on * mix(0.3, 1.0, 1.0 - smoothstep(6.0, 22.0, depth)) * (0.55 + lift * 0.45);
+        gl_PointSize = on * clamp(uSize * uPixelRatio * (10.0 / max(depth, 0.5)), 1.0, 6.0);
+        gl_Position = projectionMatrix * mv;
+      }
+    `,
+      fragmentShader: `
+      varying vec3 vColor;
+      varying float vAlpha;
+      void main() {
+        vec2 c = gl_PointCoord - 0.5;
+        float r = dot(c, c);
+        if (r > 0.25) discard;
+        float edge = 1.0 - smoothstep(0.14, 0.25, r);
+        gl_FragColor = vec4(vColor, vAlpha * edge);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }
+    `
+    });
     let seed = 7;
     const rnd = () => {
       seed = seed * 16807 % 2147483647;
       return seed / 2147483647;
     };
-    for (let i = 0; i < 70; i += 1) {
-      const x = -4.4 + rnd() * 8.8;
-      const z = -3.1 + rnd() * 6.2;
-      const len = 0.4 + rnd() * 1.7;
-      if (rnd() > 0.5) pushLine(x, z, Math.min(4.6, x + len), z);
-      else pushLine(x, z, x, Math.min(3.2, z + len));
-    }
-    const rect = (cx, cz, w, d) => {
-      const a = cx - w / 2, b = cx + w / 2, c = cz - d / 2, e = cz + d / 2;
-      pushLine(a, c, b, c);
-      pushLine(b, c, b, e);
-      pushLine(b, e, a, e);
-      pushLine(a, e, a, c);
-    };
-    rect(-1.4, -0.7, 2.1, 2.1);
-    rect(2.1, -1.3, 2, 3);
-    rect(0.2, 1.6, 5.4, 1.7);
-    rect(2.6, 2, 1.2, 2.9);
-    board.add(new LineSegments(new BufferGeometry().setFromPoints(tracePoints), matLine));
-    for (const x of [-4.6, 4.6]) for (const z of [-3.2, 3.2]) {
-      mesh(board, cyl(0.12, 0.22, 16), matDark, x, 0.1, z);
-    }
-    mesh(board, box(5.4, 0.08, 0.22), matDark, 0.2, 0.13, 1.6);
-    const groups = {};
-    function component(name, x, y, z) {
-      const g = new Group();
-      g.position.set(x, y, z);
-      g.userData.home = { x, y, z };
-      board.add(g);
-      groups[name] = g;
-      return g;
-    }
-    const cpu = component("cpu", -1.4, 0.24, -0.7);
-    mesh(cpu, box(1.9, 0.12, 1.9), matDark, 0, 0, 0);
-    mesh(cpu, box(1.45, 0.1, 1.45), matMetal, 0, 0.11, 0);
-    mesh(cpu, box(0.82, 0.02, 0.82), matInk, 0, 0.17, 0);
-    for (let i = 0; i < 12; i += 1) {
-      const a = i / 12 * Math.PI * 2;
-      mesh(cpu, cyl(0.025, 0.05, 8), matMetal, Math.cos(a) * 0.88, 0.02, Math.sin(a) * 0.88);
-    }
-    const cooler = component("cooler", -1.4, 0.62, -0.7);
-    const finGeo = box(1.7, 0.46, 0.045);
-    for (let i = 0; i < 9; i += 1) mesh(cooler, finGeo, matMetal, 0, 0.25, (i - 4) * 0.095);
-    mesh(cooler, cyl(0.72, 0.12, 24), matDark, 0, 0.56, 0);
-    const bladeGeo = box(0.62, 0.02, 0.14);
-    for (let i = 0; i < 6; i += 1) {
-      mesh(cooler, bladeGeo, matInk, 0, 0.63, 0, 0, i / 6 * Math.PI * 2, 0.18);
-    }
-    const ram = component("ram", 2.1, 0.24, -1.3);
-    const stickGeo = box(0.22, 0.9, 2.6);
-    const spreadGeo = box(0.24, 0.74, 2.5);
-    for (let i = 0; i < 4; i += 1) {
-      const x = (i - 1.5) * 0.42;
-      mesh(ram, stickGeo, matDark, x, 0.45, 0);
-      mesh(ram, spreadGeo, matMetal, x, 0.48, 0);
-      mesh(ram, box(0.2, 0.06, 2.3), matInk, x, 0.03, 0);
-    }
-    const gpu = component("gpu", 0.2, 0.34, 1.6);
-    mesh(gpu, box(5.2, 0.14, 1.5), matPCB, 0, 0, 0);
-    mesh(gpu, box(5, 0.42, 1.35), matDark, 0, 0.28, 0);
-    mesh(gpu, box(0.12, 0.9, 1.6), matMetal, -2.65, 0.3, 0);
-    for (const fx of [-1.2, 1.2]) {
-      mesh(gpu, cyl(0.52, 0.1, 24), matMetal, fx, 0.52, 0);
-      for (let i = 0; i < 5; i += 1) {
-        mesh(gpu, box(0.46, 0.02, 0.1), matInk, fx, 0.58, 0, 0, i / 5 * Math.PI * 2, 0.2);
+    const profilePoints = [];
+    const lo = col(C.pointLo), mid = col(C.pointMid), hi = col(C.pointHi);
+    function samplePoint(def) {
+      if (def.k === "cyl") {
+        const a = rnd() * Math.PI * 2;
+        const y = (rnd() - 0.5) * def.h;
+        const r = def.r * (0.96 + rnd() * 0.04);
+        return [def.x + Math.cos(a) * r, def.y + y, def.z + Math.sin(a) * r];
       }
+      const face = rnd() * 6 | 0;
+      const u = rnd() - 0.5, v = rnd() - 0.5;
+      const hw = def.w / 2, hh = def.h / 2, hd = def.d / 2;
+      if (face === 0) return [def.x + u * def.w, def.y + hh, def.z + v * def.d];
+      if (face === 1) return [def.x + u * def.w, def.y - hh, def.z + v * def.d];
+      if (face === 2) return [def.x + hw, def.y + u * def.h, def.z + v * def.d];
+      if (face === 3) return [def.x - hw, def.y + u * def.h, def.z + v * def.d];
+      if (face === 4) return [def.x + u * def.w, def.y + v * def.h, def.z + hd];
+      return [def.x + u * def.w, def.y + v * def.h, def.z - hd];
     }
-    const storage = component("storage", 2.6, 0.2, 2);
-    mesh(storage, box(0.9, 0.08, 2.6), matDark, 0, 0, 0);
-    mesh(storage, box(0.72, 0.012, 1.9), matInk, 0, 0.05, 0);
-    const vrm = component("vrm", -3.5, 0.26, 0.8);
-    const vrmGeo = box(0.6, 0.5, 1.1);
-    for (let i = 0; i < 3; i += 1) mesh(vrm, vrmGeo, matMetal, (i - 1) * 0.72, 0.25, 0);
-    const io = component("io", -4.4, 0.3, -2.4);
-    for (let i = 0; i < 3; i += 1) {
-      mesh(io, box(0.5, 0.55, 0.7), matDark, 0, 0.28, (i - 1) * 0.85);
-      mesh(io, box(0.3, 0.28, 0.5), matInk, 0.28, 0.25, (i - 1) * 0.85);
+    function scanPoints(parent, defs, count, layer, groupId, home) {
+      const pos = new Float32Array(count * 3);
+      const rgb = new Float32Array(count * 3);
+      const lay = new Float32Array(count);
+      const grp = new Float32Array(count);
+      for (let i = 0; i < count; i += 1) {
+        const p = samplePoint(defs[rnd() * defs.length | 0]);
+        pos.set(p, i * 3);
+        const t = Math.max(0, Math.min(1, (p[1] + home[1] + 0.2) / 1.7));
+        const c = t < 0.5 ? lo.clone().lerp(mid, t * 2) : mid.clone().lerp(hi, (t - 0.5) * 2);
+        rgb.set([c.r, c.g, c.b], i * 3);
+        lay[i] = layer;
+        grp[i] = groupId;
+        if (i % 41 === 0) profilePoints.push({ x: p[0] + home[0], y: p[1] + home[1] });
+      }
+      const geo = new BufferGeometry();
+      geo.setAttribute("position", new BufferAttribute(pos, 3));
+      geo.setAttribute("aColor", new BufferAttribute(rgb, 3));
+      geo.setAttribute("aLayer", new BufferAttribute(lay, 1));
+      geo.setAttribute("aGroup", new BufferAttribute(grp, 1));
+      const pts = new Points(geo, scanMaterial);
+      pts.renderOrder = 2;
+      parent.add(pts);
+      return pts;
     }
-    const HOME = {};
-    Object.keys(groups).forEach((k) => {
-      HOME[k] = { ...groups[k].userData.home, rx: 0, ry: 0, rz: 0 };
-    });
-    const LIFT = {
-      cpu: { x: 0, y: 0.45, z: 0, rx: 0.05, ry: 0, rz: 0 },
-      cooler: { x: 0, y: 0.9, z: 0, rx: 0.05, ry: 0, rz: 0 },
-      ram: { x: 0, y: 0.7, z: 0, rx: 0, ry: 0, rz: 0.08 },
-      gpu: { x: 0, y: 0.6, z: 0.3, rx: 0.08, ry: 0, rz: 0 },
-      storage: { x: 0, y: 0.4, z: 0.2, rx: 0, ry: 0, rz: 0 },
-      vrm: { x: 0, y: 0.4, z: 0.1, rx: 0, ry: 0, rz: 0 },
-      io: { x: 0, y: 0.3, z: -0.1, rx: 0, ry: 0, rz: 0 }
-    };
-    const EXPLODE = {
-      cpu: { x: -0.5, y: 1.5, z: -0.4, rx: 0.12, ry: 0.1, rz: -0.08 },
-      cooler: { x: -0.9, y: 3, z: -0.8, rx: 0.18, ry: 0.14, rz: 0.12 },
-      ram: { x: 1.2, y: 1.7, z: -1.1, rx: 0.08, ry: 0.12, rz: 0.22 },
-      gpu: { x: 0.3, y: 2.1, z: 2, rx: 0.22, ry: 0.08, rz: 0 },
-      storage: { x: 1.6, y: 1.1, z: 2.3, rx: 0.1, ry: 0.1, rz: -0.18 },
-      vrm: { x: -1.5, y: 1.3, z: 0.7, rx: 0.1, ry: 0.08, rz: 0.1 },
-      io: { x: -1.1, y: 0.9, z: -0.9, rx: 0, ry: 0.1, rz: 0.12 }
-    };
-    function place(tl2, t, d, map) {
-      Object.keys(map).forEach((name) => {
-        const g = groups[name];
-        const h = HOME[name];
-        const o = map[name];
-        tl2.to(g.position, { x: h.x + o.x, y: h.y + o.y, z: h.z + o.z, duration: d, ease: "none" }, t);
-        tl2.to(g.rotation, { x: o.rx || 0, y: o.ry || 0, z: o.rz || 0, duration: d, ease: "none" }, t);
+    function solidMaterial() {
+      return new MeshStandardMaterial({
+        color: col(C.paper2),
+        roughness: 0.68,
+        metalness: 0.38,
+        transparent: true,
+        opacity: 0.12,
+        depthWrite: false
       });
     }
-    function move(tl2, t, d, cam, look) {
-      tl2.to(camera.position, { x: cam[0], y: cam[1], z: cam[2], duration: d, ease: "none" }, t);
-      tl2.to(target, { x: look[0], y: look[1], z: look[2], duration: d, ease: "none" }, t);
+    const DEFS = [
+      { name: "board", home: [0, 0, 0], layer: 0, count: mobile ? 2600 : 6200, parts: [
+        { k: "box", w: 10, h: 0.18, d: 7, x: 0, y: 0, z: 0 },
+        { k: "box", w: 10, h: 0.02, d: 7, x: 0, y: 0.1, z: 0 }
+      ] },
+      { name: "cpu", home: [-1.5, 0.2, -0.6], layer: 2, count: mobile ? 1300 : 3200, parts: [
+        { k: "box", w: 2.2, h: 0.1, d: 2.2, x: 0, y: 0, z: 0 },
+        { k: "box", w: 1.5, h: 0.08, d: 1.5, x: 0, y: 0.09, z: 0 },
+        { k: "box", w: 1.8, h: 0.1, d: 1.8, x: 0, y: 0.2, z: 0 },
+        { k: "box", w: 1.8, h: 0.5, d: 0.06, x: 0, y: 0.45, z: -0.5 },
+        { k: "box", w: 1.8, h: 0.5, d: 0.06, x: 0, y: 0.45, z: -0.25 },
+        { k: "box", w: 1.8, h: 0.5, d: 0.06, x: 0, y: 0.45, z: 0 },
+        { k: "box", w: 1.8, h: 0.5, d: 0.06, x: 0, y: 0.45, z: 0.25 },
+        { k: "box", w: 1.8, h: 0.5, d: 0.06, x: 0, y: 0.45, z: 0.5 },
+        { k: "cyl", r: 0.7, h: 0.12, x: 0, y: 0.78, z: 0 }
+      ] },
+      { name: "ram", home: [2.2, 0.15, -0.5], layer: 2, count: mobile ? 900 : 2200, parts: [
+        { k: "box", w: 0.24, h: 1.1, d: 0.14, x: -0.55, y: 0.55, z: 0 },
+        { k: "box", w: 0.24, h: 1.1, d: 0.14, x: -0.18, y: 0.55, z: 0 },
+        { k: "box", w: 0.24, h: 1.1, d: 0.14, x: 0.18, y: 0.55, z: 0 },
+        { k: "box", w: 0.24, h: 1.1, d: 0.14, x: 0.55, y: 0.55, z: 0 }
+      ] },
+      { name: "gpu", home: [0.2, 0.25, 1.2], layer: 2, count: mobile ? 1400 : 3400, parts: [
+        { k: "box", w: 5.4, h: 0.18, d: 1.3, x: 0, y: 0, z: 0 },
+        { k: "box", w: 0.1, h: 0.5, d: 1.3, x: -2.7, y: 0.2, z: 0 },
+        { k: "cyl", r: 0.45, h: 0.08, x: -1.4, y: 0.13, z: 0 },
+        { k: "cyl", r: 0.45, h: 0.08, x: 1.4, y: 0.13, z: 0 }
+      ] },
+      { name: "storage", home: [2.9, 0.16, 1.7], layer: 2, count: mobile ? 500 : 1200, parts: [
+        { k: "box", w: 1.6, h: 0.08, d: 0.5, x: 0, y: 0, z: 0 },
+        { k: "box", w: 1.6, h: 0.04, d: 0.5, x: 0, y: 0.06, z: 0 }
+      ] },
+      { name: "vrm", home: [-3.6, 0.16, 1.2], layer: 2, count: mobile ? 500 : 1200, parts: [
+        { k: "box", w: 0.8, h: 0.5, d: 0.8, x: -0.5, y: 0.25, z: 0 },
+        { k: "box", w: 0.8, h: 0.5, d: 0.8, x: 0.5, y: 0.25, z: 0 }
+      ] },
+      { name: "io", home: [-4.1, 0.2, -2.2], layer: 2, count: mobile ? 500 : 1200, parts: [
+        { k: "box", w: 1.2, h: 0.6, d: 0.8, x: 0, y: 0.3, z: 0 },
+        { k: "box", w: 0.3, h: 0.25, d: 0.1, x: -0.35, y: 0.3, z: -0.45 },
+        { k: "box", w: 0.3, h: 0.25, d: 0.1, x: 0.35, y: 0.3, z: -0.45 }
+      ] }
+    ];
+    const groups = DEFS.map((def, index) => {
+      const g = new Group();
+      g.position.set(def.home[0], def.home[1], def.home[2]);
+      g.userData.home = def.home.slice();
+      g.userData.index = index;
+      g.userData.material = solidMaterial();
+      const mat = g.userData.material;
+      def.parts.forEach((p) => {
+        let mesh;
+        if (p.k === "cyl") {
+          mesh = new Mesh(new CylinderGeometry(p.r, p.r, p.h, 20), mat);
+        } else {
+          mesh = new Mesh(new BoxGeometry(p.w, p.h, p.d), mat);
+        }
+        mesh.position.set(p.x, p.y, p.z);
+        mesh.castShadow = !mobile;
+        mesh.receiveShadow = true;
+        mesh.renderOrder = 1;
+        g.add(mesh);
+      });
+      rig.add(g);
+      scanPoints(g, def.parts, def.count, def.layer, index, def.home);
+      return g;
+    });
+    const tracePoints = [];
+    const push = (x1, z1, x2, z2) => tracePoints.push(
+      new Vector3(x1, 0.105, z1),
+      new Vector3(x2, 0.105, z2)
+    );
+    for (let i = 0; i < 48; i += 1) {
+      const x = -4.4 + rnd() * 8.8;
+      const z = -3.1 + rnd() * 6.2;
+      const len = 0.4 + rnd() * 1.6;
+      if (rnd() > 0.5) push(x, z, Math.min(4.6, x + len), z);
+      else push(x, z, x, Math.min(3.2, z + len));
     }
-    let lastIdx = -1;
-    function syncUI(p) {
-      const idx = Math.max(0, Math.min(6, Math.floor(p * 7)));
-      steps.forEach((el, i) => el.classList.toggle("is-active", i === idx));
+    const traces = new LineSegments(
+      new BufferGeometry().setFromPoints(tracePoints),
+      new LineBasicMaterial({ color: col(C.rule), transparent: true, opacity: 0.55 })
+    );
+    rig.add(traces);
+    const foundDefs = groups.map((g) => ({ k: "box", w: 0.5, h: 0.5, d: 0.5, x: 0, y: 0.3, z: 0 }));
+    const foundGroup = new Group();
+    rig.add(foundGroup);
+    const foundPos = new Float32Array(groups.length * 3);
+    const foundRgb = new Float32Array(groups.length * 3);
+    const foundLay = new Float32Array(groups.length);
+    const foundGrp = new Float32Array(groups.length);
+    groups.forEach((g, i) => {
+      const h = g.userData.home;
+      foundPos.set([h[0], h[1] + 0.3, h[2]], i * 3);
+      foundRgb.set([mid.r, mid.g, mid.b], i * 3);
+      foundLay[i] = 3;
+      foundGrp[i] = -1;
+    });
+    const foundGeo = new BufferGeometry();
+    foundGeo.setAttribute("position", new BufferAttribute(foundPos, 3));
+    foundGeo.setAttribute("aColor", new BufferAttribute(foundRgb, 3));
+    foundGeo.setAttribute("aLayer", new BufferAttribute(foundLay, 1));
+    foundGeo.setAttribute("aGroup", new BufferAttribute(foundGrp, 1));
+    const foundPts = new Points(foundGeo, scanMaterial);
+    foundPts.renderOrder = 3;
+    foundGroup.add(foundPts);
+    const CAM = [
+      [0, 7.5, 13.5],
+      [-3, 2.8, 4.8],
+      [2.8, 2.6, 4.4],
+      [0.6, 2.2, 5.4],
+      [4.4, 3, 5.2],
+      [0, 9.5, 15.5],
+      [0, 6.8, 12.5]
+    ];
+    const LOOK = [
+      [0, 0.2, 0],
+      [-1.5, 0.7, -0.6],
+      [2.2, 0.8, -0.5],
+      [0.2, 0.5, 1.2],
+      [2.8, 0.4, 1.2],
+      [0, 0.9, 0],
+      [0, 0.2, 0]
+    ];
+    const RIG = [
+      [0.02, -0.18, 0],
+      [0.02, -0.32, 0],
+      [0.02, 0.12, 0],
+      [0.06, -0.05, 0],
+      [0.02, 0.28, 0],
+      [0, 0, 0],
+      [0.02, -0.18, 0]
+    ];
+    const FOV = [38, 34, 34, 36, 34, 42, 38];
+    const SWEEP = [-1.2, 0.2, 0.5, 0.4, 0.8, 2.2, 3.2];
+    const FOUND = [-1, 1, 2, 3, 4, -1, -1];
+    const zero = () => groups.map(() => [0, 0, 0, 0, 0]);
+    const OFF = [
+      zero(),
+      (() => {
+        const a = zero();
+        a[1] = [0, 0.9, 0, 0.04, -0.05];
+        return a;
+      })(),
+      (() => {
+        const a = zero();
+        a[2] = [0.3, 1, 0, -0.05, 0.06];
+        return a;
+      })(),
+      (() => {
+        const a = zero();
+        a[3] = [0, 0.8, 0.4, 0.06, 0];
+        return a;
+      })(),
+      (() => {
+        const a = zero();
+        a[4] = [0.5, 0.7, 0.3, 0, 0.05];
+        a[5] = [-0.4, 0.6, 0, 0, -0.05];
+        a[6] = [-0.2, 0.5, -0.3, 0.04, 0];
+        return a;
+      })(),
+      [
+        [0, 0, 0, 0, 0],
+        [-1, 2.2, -1, 0.08, -0.08],
+        [1.4, 2.6, -1.2, -0.06, 0.08],
+        [0, 1.6, 2.4, 0.05, 0],
+        [2, 2, 1.6, 0, 0.1],
+        [-2.2, 1.8, 1.4, 0, -0.1],
+        [-1.8, 1.4, -2.2, 0.08, 0]
+      ],
+      zero()
+    ];
+    const ALPHA = [
+      [0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12],
+      [0.35, 0.95, 0.12, 0.12, 0.12, 0.12, 0.12],
+      [0.35, 0.8, 0.95, 0.12, 0.12, 0.12, 0.12],
+      [0.4, 0.8, 0.8, 0.95, 0.12, 0.12, 0.12],
+      [0.5, 0.8, 0.8, 0.8, 0.95, 0.9, 0.85],
+      [0.92, 0.92, 0.92, 0.92, 0.92, 0.92, 0.92],
+      [0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95]
+    ];
+    function key(i) {
+      const k = {
+        duration: 1,
+        ease: "none",
+        camX: CAM[i][0],
+        camY: CAM[i][1],
+        camZ: CAM[i][2],
+        lookX: LOOK[i][0],
+        lookY: LOOK[i][1],
+        lookZ: LOOK[i][2],
+        rigX: RIG[i][0],
+        rigY: RIG[i][1],
+        rigZ: RIG[i][2],
+        fov: FOV[i],
+        sweep: SWEEP[i],
+        found: FOUND[i]
+      };
+      OFF[i].forEach((o, j) => {
+        k["o" + j + "x"] = o[0];
+        k["o" + j + "y"] = o[1];
+        k["o" + j + "z"] = o[2];
+        k["o" + j + "rx"] = o[3];
+        k["o" + j + "rz"] = o[4];
+      });
+      ALPHA[i].forEach((a, j) => {
+        k["a" + j] = a;
+      });
+      return k;
+    }
+    const S = {};
+    const k0 = key(0);
+    Object.keys(k0).forEach((p) => {
+      if (p !== "duration" && p !== "ease") S[p] = k0[p];
+    });
+    function apply(s) {
+      camera.position.set(s.camX, s.camY, s.camZ);
+      camera.fov = s.fov;
+      camera.updateProjectionMatrix();
+      camera.lookAt(s.lookX, s.lookY, s.lookZ);
+      rig.rotation.set(s.rigX, s.rigY, s.rigZ);
+      uniforms.uSweepY.value = s.sweep;
+      uniforms.uFoundGroup.value = s.found;
+      groups.forEach((g, j) => {
+        const h = g.userData.home;
+        g.position.set(h[0] + s["o" + j + "x"], h[1] + s["o" + j + "y"], h[2] + s["o" + j + "z"]);
+        g.rotation.set(s["o" + j + "rx"], 0, s["o" + j + "rz"]);
+        g.userData.material.opacity = s["a" + j];
+      });
+    }
+    const focusGroup = [groups[0], groups[1], groups[2], groups[3], groups[4], groups[0], groups[0]];
+    const projected = new Vector3();
+    let needsRender = true;
+    let tl;
+    function paintUI(idx, progress) {
       hudTahap.textContent = LABELS[idx];
       hudNo.textContent = String(idx).padStart(2, "0") + " / 06";
-      hudPersen.textContent = Math.round(p * 100) + "%";
-      rail.style.transform = "scaleY(" + Math.max(1e-3, p).toFixed(4) + ")";
-      if (idx !== lastIdx) {
-        announce.textContent = "Tahap " + idx + ", " + LABELS[idx];
-        lastIdx = idx;
-      }
+      hudPersen.textContent = Math.round(progress * 100) + "%";
+      rail.style.transform = "scaleY(" + progress + ")";
+      steps.forEach((el, i) => el.classList.toggle("is-active", i === idx));
+      stageButtons.forEach((el, i) => el.classList.toggle("is-active", i === idx));
+      announce.textContent = "Tahap " + (idx + 1) + " dari 7, " + LABELS[idx];
+      focusGroup[idx].getWorldPosition(projected);
+      projected.project(camera);
+      const rect = canvas.getBoundingClientRect();
+      const x = rect.left + (projected.x * 0.5 + 0.5) * rect.width;
+      const y = rect.top + (-projected.y * 0.5 + 0.5) * rect.height;
+      root.style.setProperty("--cx", Math.max(0, Math.min(window.innerWidth - 200, x)) + "px");
+      root.style.setProperty("--cy", Math.max(80, Math.min(window.innerHeight - 80, y)) + "px");
+      calloutLabel.textContent = CALLOUT_LABELS[idx];
+      calloutFig.textContent = String(idx + 1).padStart(2, "0") + " / 07";
     }
-    let needsRender = true;
-    let visible = true;
-    const observer = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting;
-      if (visible) needsRender = true;
-    }, { rootMargin: "200px" });
-    observer.observe(canvas);
+    function sync() {
+      const p = tl ? tl.progress() : 0;
+      const idx = Math.min(6, Math.round(p * 6));
+      apply(S);
+      paintUI(idx, p);
+      needsRender = true;
+    }
+    function bindLayers() {
+      document.querySelectorAll("[data-layer]").forEach((input) => {
+        const u = uniforms["uLayer" + input.dataset.layer];
+        if (!u) return;
+        u.value = input.checked ? 1 : 0;
+        input.addEventListener("change", () => {
+          u.value = input.checked ? 1 : 0;
+          needsRender = true;
+        });
+      });
+    }
+    function bindStages() {
+      stageButtons.forEach((btn, i) => {
+        btn.addEventListener("click", () => {
+          if (reduced || !tl || !tl.scrollTrigger) {
+            const el = document.getElementById("tahap-" + i);
+            if (el) el.scrollIntoView({ behavior: "auto", block: "start" });
+            return;
+          }
+          const st = tl.scrollTrigger;
+          window.scrollTo({
+            top: st.start + (st.end - st.start) * (i / 6),
+            behavior: "smooth"
+          });
+        });
+      });
+    }
+    function drawProfile() {
+      if (!profileCanvas) return;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = profileCanvas.clientWidth || 800;
+      const h = 160;
+      profileCanvas.width = Math.round(w * dpr);
+      profileCanvas.height = Math.round(h * dpr);
+      const ctx = profileCanvas.getContext("2d");
+      if (!ctx) return;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      const baseY = h - 24;
+      ctx.strokeStyle = C.rule.hex;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, baseY);
+      ctx.lineTo(w, baseY);
+      ctx.stroke();
+      const pts = profilePoints.length ? profilePoints : (() => {
+        let s = 19;
+        const out = [];
+        for (let i = 0; i < 900; i += 1) {
+          s = s * 16807 % 2147483647;
+          const r1 = s / 2147483647;
+          s = s * 16807 % 2147483647;
+          const r2 = s / 2147483647;
+          out.push({ x: (r1 - 0.5) * 10, y: r2 * 1.3 });
+        }
+        return out;
+      })();
+      ctx.fillStyle = C.pointMid.hex;
+      pts.forEach((p) => {
+        const x = (p.x + 5) / 10 * w;
+        const y = baseY - Math.max(0, Math.min(1, p.y / 1.5)) * (h - 40);
+        ctx.globalAlpha = 0.18 + Math.max(0, Math.min(1, p.y / 1.5)) * 0.6;
+        ctx.fillRect(x, y, 1.5, 1.5);
+      });
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = C.rule2.hex;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.18, baseY);
+      ctx.lineTo(w * 0.18, baseY - 26);
+      ctx.lineTo(w * 0.3, baseY - 26);
+      ctx.moveTo(w * 0.64, baseY - 92);
+      ctx.lineTo(w * 0.64, baseY - 26);
+      ctx.lineTo(w * 0.76, baseY - 26);
+      ctx.stroke();
+      ctx.fillStyle = C.accent.hex;
+      ctx.fillRect(w * 0.18 - 1.5, baseY - 27.5, 3, 3);
+      ctx.fillRect(w * 0.64 - 1.5, baseY - 93.5, 3, 3);
+    }
     function resize() {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      if (!w || !h) return;
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
+      uniforms.uPixelRatio.value = renderer.getPixelRatio();
+      drawProfile();
       needsRender = true;
     }
+    bindLayers();
+    bindStages();
     window.addEventListener("resize", resize);
     resize();
+    apply(S);
     gsap.ticker.add(() => {
-      if (!visible || document.hidden || !needsRender) return;
-      camera.lookAt(target.x, target.y, target.z);
+      if (document.hidden || !needsRender) return;
       renderer.render(scene, camera);
       needsRender = false;
     });
     if (reduced) {
-      body.classList.add("is-static");
-      steps.forEach((el) => el.classList.add("is-active"));
-      camera.position.set(0, 7.5, 13.5);
-      target.x = 0;
-      target.y = 0.2;
-      target.z = 0;
-      hudTahap.textContent = LABELS[0];
-      hudNo.textContent = "00 / 06";
-      hudPersen.textContent = "0%";
-      rail.style.transform = "scaleY(1)";
+      body.classList.add("is-reduced");
+      const k = key(6);
+      Object.keys(k).forEach((p) => {
+        if (p !== "duration" && p !== "ease") S[p] = k[p];
+      });
+      apply(S);
+      paintUI(6, 1);
       needsRender = true;
       return;
     }
-    const tl = gsap.timeline({
+    tl = gsap.timeline({
       scrollTrigger: {
         trigger: "#journey",
         start: "top top",
         end: "bottom bottom",
         scrub: 0.8,
-        invalidateOnRefresh: true
+        invalidateOnRefresh: true,
+        onRefresh: () => {
+          needsRender = true;
+        }
       },
-      onUpdate: () => {
-        needsRender = true;
-        syncUI(tl.progress());
-      }
+      onUpdate: sync
     });
-    tl.to(rig.rotation, { x: 0.05, y: 0.28, duration: 7, ease: "none" }, 0);
-    move(tl, 1, 1, [-1.4, 3.4, 4.2], [-1.4, 0.5, -0.7]);
-    place(tl, 1, 1, { cpu: LIFT.cpu, cooler: LIFT.cooler });
-    move(tl, 2, 1, [2.2, 3, 3.8], [2.1, 0.6, -1]);
-    place(tl, 2, 1, { ram: LIFT.ram });
-    move(tl, 3, 1, [0.4, 2.6, 5], [0.2, 0.5, 1.6]);
-    place(tl, 3, 1, { gpu: LIFT.gpu });
-    move(tl, 4, 1, [3, 2.8, 4.6], [2.4, 0.4, 1.9]);
-    place(tl, 4, 1, { storage: LIFT.storage, vrm: LIFT.vrm, io: LIFT.io });
-    move(tl, 5, 1, [0, 9.5, 15.5], [0, 1.2, 0]);
-    place(tl, 5, 1, EXPLODE);
-    move(tl, 6, 1, [0, 6.8, 12.5], [0, 0.2, 0]);
-    place(tl, 6, 0.75, Object.fromEntries(Object.keys(HOME).map((k) => [k, { x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0 }])));
-    syncUI(0);
+    for (let i = 1; i <= 6; i += 1) tl.to(S, key(i), i - 1);
+    ScrollTrigger.addEventListener("refresh", () => {
+      needsRender = true;
+    });
+    sync();
   })();
 })();
 /**
@@ -28349,105 +28842,171 @@ void main() {
   <div class="backdrop" aria-hidden="true"></div>
   <canvas id="scene" aria-hidden="true"></canvas>
 
+  <div class="callout" data-callout aria-hidden="true">
+    <span class="callout__dot"></span>
+    <span class="callout__line"></span>
+    <span class="callout__label" data-callout-label>Soket prosesor</span>
+    <span class="callout__fig num" data-callout-fig>01 / 07</span>
+  </div>
+
+  <aside class="hud" aria-label="Tahap pindai">
+    <p class="hud__tahap" data-hud-tahap>Rakit utuh</p>
+    <p class="hud__no num" data-hud-no>00 / 06</p>
+    <div class="rail"><i data-rail></i></div>
+    <p class="hud__persen num" data-hud-persen>0%</p>
+    <ol class="hud__stages">
+      <li><button type="button" class="stage is-active" data-stage="0">Rakit utuh</button></li>
+      <li><button type="button" class="stage" data-stage="1">Unit pemroses</button></li>
+      <li><button type="button" class="stage" data-stage="2">Memori</button></li>
+      <li><button type="button" class="stage" data-stage="3">Grafis</button></li>
+      <li><button type="button" class="stage" data-stage="4">Daya dan simpan</button></li>
+      <li><button type="button" class="stage" data-stage="5">Tampilan lepas</button></li>
+      <li><button type="button" class="stage" data-stage="6">Utuh kembali</button></li>
+    </ol>
+    <p class="sr" aria-live="polite" data-announce></p>
+  </aside>
+
   <header class="bar">
-    <div class="wrap bar__in">
-      <a class="brand" href="#top" aria-label="Hardware Explorer, kembali ke atas"><span class="brand__mark" aria-hidden="true">/</span>hardware explorer</a>
+    <div class="container bar__in">
+      <a class="brand" href="#top" aria-label="Pindai, kembali ke atas"><span class="brand__mark" aria-hidden="true">///</span>pindai</a>
       <nav class="bar__nav" aria-label="Bagian halaman">
         <a href="#journey">Penjelajahan</a>
-        <a href="#komponen">Register</a>
-        <a href="#rakit">Rakit</a>
+        <a href="#lapisan">Lapisan</a>
+        <a href="#register">Register</a>
       </nav>
-      <a class="btn btn--primary" href="#journey">Mulai</a>
+      <a class="btn btn--primary" href="#journey">Mulai pindai</a>
     </div>
   </header>
 
   <main>
     <section class="hero" id="top" aria-labelledby="judul">
-      <div class="wrap hero__grid">
+      <div class="container hero__grid">
         <div class="hero__copy">
-          <h1 id="judul">Hardware Explorer</h1>
-          <p class="lede">Satu papan, tujuh tahap gulir. Kamera turun, komponen lepas, lalu kembali terakit.</p>
+          <h1 id="judul">Papan induk, tujuh kali dipindai</h1>
+          <p class="lead">Awan titik menyusun komponen, lalu kamera membongkar dan merakitnya kembali.</p>
           <div class="aksi">
-            <a class="btn btn--primary" href="#journey">Mulai penjelajahan</a>
-            <a class="btn btn--line" href="#komponen">Lihat register</a>
+            <a class="btn btn--primary" href="#journey">Mulai pindai</a>
+            <a class="btn btn--line" href="#register">Lihat register</a>
           </div>
-          <p class="fine">Adegan tiga dimensi dibangun dari objek asli, bukan gambar diam.</p>
+          <p class="fine">Tujuh tahap, satu kanvas, tanpa section yang disematkan.</p>
         </div>
-        <div class="hero__ukur" aria-hidden="true">
-          <div class="dim"><span class="num">10 × 7 unit adegan</span></div>
-          <p class="ukur">Lembar biru Prusia, garis putih, tanpa warna kedua.</p>
-          <p class="ukur">Ukuran di atas adalah satuan adegan, bukan ukuran fisik perangkat.</p>
+        <div class="hero__ukur ticks" aria-hidden="true">
+          <p class="figure">07</p>
+          <p class="ukur">tahap pindai dalam satuan adegan</p>
         </div>
       </div>
-      <p class="cue" data-cue>Gulir untuk membongkar</p>
+      <p class="cue" data-cue>Gulir untuk menyusur papan</p>
     </section>
 
-    <section class="journey" id="journey" aria-label="Penjelajahan komponen">
-      <div class="hud" aria-hidden="true">
-        <p class="hud__tahap" data-hud-tahap>Rakit utuh</p>
-        <p class="hud__no num" data-hud-no>00 / 06</p>
-        <div class="rail"><i data-rail></i></div>
-        <p class="hud__persen num" data-hud-persen>0%</p>
-      </div>
-      <p class="sr" aria-live="polite" data-announce></p>
-
-      <div class="steps">
-        <article class="step" data-step="0">
-          <h2>Rakit utuh</h2>
-          <p>Seluruh komponen duduk pada papan induk. Kamera melihat dari tiga perempat, jarak jauh, sebelum turun ke detail.</p>
-          <p class="ukur">Tahap 00, kamera 13,5 unit</p>
-        </article>
-        <article class="step" data-step="1">
-          <h2>Unit pemroses</h2>
-          <p>Kamera mendekat ke soket. Prosesor dan pendingin naik perlahan, memperlihatkan tumpukan logam di atas die.</p>
-          <p class="ukur">Tahap 01, fokus cpu</p>
-        </article>
-        <article class="step" data-step="2">
-          <h2>Memori</h2>
-          <p>Empat keping memori berdiri di sela soket. Kamera bergeser ke kanan, keping terangkat satu per satu.</p>
-          <p class="ukur">Tahap 02, fokus ram</p>
-        </article>
-        <article class="step" data-step="3">
-          <h2>Grafis</h2>
-          <p>Kartu panjang melintang di jalur ekspansi. Kamera turun ke dua kipas, lalu kartu terangkat dari slotnya.</p>
-          <p class="ukur">Tahap 03, fokus gpu</p>
-        </article>
-        <article class="step" data-step="4">
-          <h2>Penyimpanan dan daya</h2>
-          <p>Drive tipis, blok pendingin regulator, dan port belakang ikut terangkat. Urutan ini menjaga hubungan antar komponen tetap terbaca.</p>
-          <p class="ukur">Tahap 04, fokus storage, vrm, io</p>
-        </article>
-        <article class="step" data-step="5">
-          <h2>Tampilan lepas</h2>
-          <p>Kamera mundur. Semua bagian bergerak ke posisi lepas dengan sedikit rotasi, membentuk peta letak yang utuh.</p>
-          <p class="ukur">Tahap 05, exploded view</p>
-        </article>
-        <article class="step" data-step="6">
-          <h2>Kembali dan rakit utuh</h2>
-          <p>Bagian turun ke tempatnya. Kamera berhenti pada sudut akhir, papan kembali menjadi satu kesatuan yang siap dinyalakan.</p>
-          <p class="ukur">Tahap 06, assembly</p>
-        </article>
+    <section class="journey" id="journey" aria-labelledby="journey-judul">
+      <div class="container">
+        <div class="section-head">
+          <h2 id="journey-judul">Tujuh tahap, satu papan</h2>
+          <p class="section-lead">Gulir menggerakkan kamera, objek dan catatan pada waktu yang sama.</p>
+        </div>
+        <div class="steps">
+          <article class="step is-active" data-step="0" id="tahap-0">
+            <h3>Rakit utuh</h3>
+            <p>Seluruh komponen duduk pada papan. Kamera melihat dari tiga perempat, jauh, sebelum turun ke detail.</p>
+            <p class="ukur num">Tahap 01, kamera 13,5 satuan</p>
+          </article>
+          <article class="step" data-step="1" id="tahap-1">
+            <h3>Unit pemroses</h3>
+            <p>Sapuan lime melewati soket. Prosesor, IHS dan pendingin naik, memperlihatkan tumpukan logam di atas die.</p>
+            <p class="ukur num">Tahap 02, fokus cpu</p>
+          </article>
+          <article class="step" data-step="2" id="tahap-2">
+            <h3>Memori</h3>
+            <p>Empat keping berdiri di sela soket. Kamera bergeser ke kanan, keping terangkat satu per satu.</p>
+            <p class="ukur num">Tahap 03, fokus ram</p>
+          </article>
+          <article class="step" data-step="3" id="tahap-3">
+            <h3>Grafis</h3>
+            <p>Kartu panjang melintang di jalur ekspansi. Kamera turun ke dua kipas, lalu kartu terangkat dari slotnya.</p>
+            <p class="ukur num">Tahap 04, fokus gpu</p>
+          </article>
+          <article class="step" data-step="4" id="tahap-4">
+            <h3>Daya dan simpan</h3>
+            <p>Drive tipis, blok regulator dan port belakang ikut terangkat. Urutan ini menjaga letak tetap terbaca.</p>
+            <p class="ukur num">Tahap 05, fokus storage, vrm, io</p>
+          </article>
+          <article class="step" data-step="5" id="tahap-5">
+            <h3>Tampilan lepas</h3>
+            <p>Kamera mundur. Semua bagian bergerak ke posisi lepas dengan sedikit rotasi, membentuk peta letak yang utuh.</p>
+            <p class="ukur num">Tahap 06, exploded view</p>
+          </article>
+          <article class="step" data-step="6" id="tahap-6">
+            <h3>Utuh kembali</h3>
+            <p>Bagian turun ke tempatnya. Kamera berhenti pada sudut akhir, papan kembali menjadi satu kesatuan.</p>
+            <p class="ukur num">Tahap 07, assembly</p>
+          </article>
+        </div>
       </div>
     </section>
 
-    <section class="register" id="komponen" aria-labelledby="register-judul">
-      <div class="wrap">
-        <div class="kepala">
-          <h2 id="register-judul">Register komponen</h2>
-          <p class="lede">Daftar sama dengan yang digerakkan di adegan, disusun sebagai lembar gambar.</p>
+    <section class="layers" id="lapisan" aria-labelledby="lapisan-judul">
+      <div class="container">
+        <div class="section-head">
+          <h2 id="lapisan-judul">Lapisan yang bisa dimatikan</h2>
+          <p class="section-lead">Setiap titik masuk ke satu lapisan. Sakelar benar-benar menyembunyikannya dari adegan.</p>
+        </div>
+        <div class="layers__grid">
+          <ul class="switches">
+            <li>
+              <label class="switch">
+                <input type="checkbox" data-layer="0" checked>
+                <span class="switch__track"><span class="switch__knob"></span></span>
+                <span class="switch__text">Dasar papan<span class="switch__hint">Bidang dan dudukan</span></span>
+              </label>
+            </li>
+            <li>
+              <label class="switch">
+                <input type="checkbox" data-layer="1" checked>
+                <span class="switch__track"><span class="switch__knob"></span></span>
+                <span class="switch__text">Jalur tembaga<span class="switch__hint">Jalur yang terukur</span></span>
+              </label>
+            </li>
+            <li>
+              <label class="switch">
+                <input type="checkbox" data-layer="2" checked>
+                <span class="switch__track"><span class="switch__knob"></span></span>
+                <span class="switch__text">Komponen<span class="switch__hint">Tujuh grup objek</span></span>
+              </label>
+            </li>
+            <li>
+              <label class="switch">
+                <input type="checkbox" data-layer="3" checked>
+                <span class="switch__track"><span class="switch__knob"></span></span>
+                <span class="switch__text">Ditemukan<span class="switch__hint">Titik yang disorot sapuan</span></span>
+              </label>
+            </li>
+          </ul>
+          <div class="layers__note ticks">
+            <p class="figure">04</p>
+            <p class="ukur">lapisan titik, semuanya dari geometri yang sama</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="register" id="register" aria-labelledby="register-judul">
+      <div class="container">
+        <div class="section-head">
+          <h2 id="register-judul">Register pindai</h2>
+          <p class="section-lead">Baris sama dengan yang digerakkan di adegan, dengan jarak kamera dalam satuan adegan.</p>
         </div>
         <table class="tabel">
           <thead>
-            <tr><th scope="col">No</th><th scope="col">Komponen</th><th scope="col">Peran</th><th scope="col">Letak</th></tr>
+            <tr><th scope="col">Tahap</th><th scope="col">Fokus</th><th scope="col">Komponen</th><th scope="col">Jarak kamera</th></tr>
           </thead>
           <tbody>
-            <tr><td class="num">01</td><td>Papan induk</td><td>Dudukan dan jalur antar bagian</td><td>Bidang dasar</td></tr>
-            <tr><td class="num">02</td><td>Prosesor</td><td>Menjalankan instruksi</td><td>Soket kiri</td></tr>
-            <tr><td class="num">03</td><td>Pendingin</td><td>Membuang panas dari prosesor</td><td>Di atas soket</td></tr>
-            <tr><td class="num">04</td><td>Memori</td><td>Menyimpan data kerja</td><td>Sela kanan</td></tr>
-            <tr><td class="num">05</td><td>Kartu grafis</td><td>Mengolah keluaran gambar</td><td>Jalur ekspansi</td></tr>
-            <tr><td class="num">06</td><td>Penyimpanan</td><td>Menyimpan data tetap</td><td>Sela bawah</td></tr>
-            <tr><td class="num">07</td><td>Regulator dan port</td><td>Mengatur daya dan sambungan</td><td>Tepi papan</td></tr>
+            <tr><td class="num" data-label="Tahap">01</td><td data-label="Fokus">Rakit utuh</td><td data-label="Komponen">Semua grup</td><td class="num" data-label="Jarak kamera">13,5</td></tr>
+            <tr><td class="num" data-label="Tahap">02</td><td data-label="Fokus">Unit pemroses</td><td data-label="Komponen">Soket, IHS, pendingin</td><td class="num" data-label="Jarak kamera">4,6</td></tr>
+            <tr><td class="num" data-label="Tahap">03</td><td data-label="Fokus">Memori</td><td data-label="Komponen">Empat keping</td><td class="num" data-label="Jarak kamera">4,2</td></tr>
+            <tr><td class="num" data-label="Tahap">04</td><td data-label="Fokus">Grafis</td><td data-label="Komponen">Kartu dan dua kipas</td><td class="num" data-label="Jarak kamera">5,2</td></tr>
+            <tr><td class="num" data-label="Tahap">05</td><td data-label="Fokus">Daya dan simpan</td><td data-label="Komponen">Drive, regulator, port</td><td class="num" data-label="Jarak kamera">5,0</td></tr>
+            <tr><td class="num" data-label="Tahap">06</td><td data-label="Fokus">Tampilan lepas</td><td data-label="Komponen">Semua grup</td><td class="num" data-label="Jarak kamera">15,5</td></tr>
+            <tr><td class="num" data-label="Tahap">07</td><td data-label="Fokus">Utuh kembali</td><td data-label="Komponen">Semua grup</td><td class="num" data-label="Jarak kamera">12,5</td></tr>
           </tbody>
         </table>
         <details class="diagram">
@@ -28470,20 +29029,40 @@ void main() {
       </div>
     </section>
 
+    <section class="cut" id="potongan" aria-labelledby="potongan-judul">
+      <div class="container">
+        <div class="section-head">
+          <h2 id="potongan-judul">Potongan melintang papan</h2>
+          <p class="section-lead">Titik adegan diproyeksikan ke satu bidang, memperlihatkan ketinggian komponen.</p>
+        </div>
+        <figure class="cut__fig">
+          <canvas id="profile" aria-hidden="true"></canvas>
+          <figcaption>
+            <span class="cut__callout">Dasar papan <span class="num">0,0</span></span>
+            <span class="cut__callout">Pendingin <span class="num">2,1</span></span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
     <section class="closing" id="rakit" aria-labelledby="rakit-judul">
-      <div class="wrap closing__in">
-        <h2 id="rakit-judul">Satu papan, utuh kembali</h2>
-        <p class="lede">Gulir balik untuk mengulang pembongkaran, atau mulai lagi dari layar pertama.</p>
-        <a class="btn btn--primary" href="#top">Ulangi dari awal</a>
+      <div class="container closing__in">
+        <h2 id="rakit-judul">Utuh kembali</h2>
+        <p class="lead">Titik kembali ke tempatnya. Papan selesai dipindai dan siap dirakit.</p>
+        <a class="btn btn--primary" href="#top">Ulangi pindai</a>
       </div>
     </section>
   </main>
 
-  <footer class="kaki">
-    <div class="wrap kaki__in">
-      <a class="brand brand--kaki" href="#top"><span class="brand__mark" aria-hidden="true">/</span>hardware explorer</a>
-      <p>Adegan memakai Three.js dan GSAP ScrollTrigger. Material rupa mengikuti tema Blueprint dari repositori Hallmark.</p>
-      <p class="kaki__bawah">Objek dibangun secara prosedural, tanpa tekstur luar. Gerak mengikuti posisi gulir, bukan waktu otomatis.</p>
+  <footer class="footer">
+    <div class="container footer__in">
+      <p class="brand">pindai</p>
+      <p>Bahan rupa mengikuti tema Vantage dan aturan Floor dari repositori Hallmark. Tanpa foto stok, tanpa angka yang dikarang.</p>
+      <nav class="footer__nav" aria-label="Tautan kaki">
+        <a href="#journey">Penjelajahan</a>
+        <a href="#lapisan">Lapisan</a>
+        <a href="#register">Register</a>
+      </nav>
     </div>
   </footer>
 </body>
