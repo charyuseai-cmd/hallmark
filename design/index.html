@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <title>Katalog bahan Hallmark, bahasa rupa untuk web</title>
+  <meta name="description" content="Lima puluh tema Hallmark sebagai bahan desain: kertas, huruf, warna dan permukaan, disusun dari isi repositori.">
+  <link rel="icon" href="data:,">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@500;600&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="themes.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#utama">Lewati ke isi</a>
+
+  <header class="bar">
+    <div class="wrap bar__in">
+      <a class="brand" href="#atas" aria-label="Hallmark, kembali ke atas"><span class="brand__slash" aria-hidden="true">/</span>hallmark</a>
+      <nav class="bar__nav" aria-label="Bagian halaman">
+        <a href="#katalog">Katalog</a>
+        <a href="#aturan">Aturan</a>
+        <a href="#alur">Alur</a>
+      </nav>
+      <a class="btn btn--garis" href="https://github.com/charyuseai-cmd/hallmark">Buka repositori</a>
+    </div>
+  </header>
+
+  <main id="utama">
+
+    <section class="hero" id="atas" aria-labelledby="judul">
+      <div class="wrap hero__grid">
+        <div class="hero__text">
+          <h1 id="judul">Desain yang terasa dibuat, bukan dihasilkan.</h1>
+          <p class="lede">Lima puluh tema, aturan lantai yang tegas, dan pemeriksaan di browser nyata.</p>
+          <div class="aksi">
+            <a class="btn btn--isi" href="#katalog">Jelajahi katalog</a>
+            <a class="btn btn--garis" href="#aturan">Baca aturannya</a>
+          </div>
+          <p class="fine">Edisi 2.0.0. Disusun dari isi repositori Hallmark.</p>
+        </div>
+
+        <figure class="lembar" aria-labelledby="lembar-judul">
+          <div class="lembar__kepala">
+            <h2 id="lembar-judul">Bahan halaman ini</h2>
+            <span class="num">01 / 50</span>
+          </div>
+          <img class="lembar__gambar" src="assets/themes/almanac.webp" width="400" height="250" alt="Contoh halaman bertema Almanac, tabel pasang surut di atas kertas biru keabuan." fetchpriority="high">
+          <dl class="spesimen">
+            <div><dt>Kertas</dt><dd>Slate 84%, rona 245</dd></div>
+            <div><dt>Huruf</dt><dd>Hanken Grotesk 600, Newsreader 400</dd></div>
+            <div><dt>Sinyal</dt><dd>Magenta 45%, rona 350</dd></div>
+          </dl>
+        </figure>
+      </div>
+    </section>
+
+    <section class="bag" id="katalog" aria-labelledby="katalog-judul">
+      <div class="wrap">
+        <div class="kepala">
+          <h2 id="katalog-judul">Katalog 50 bahan</h2>
+          <p class="lede">Satu tema adalah satu material. Isi halaman ditentukan oleh pekerjaannya.</p>
+        </div>
+
+        <div class="katalog">
+          <div class="katalog__kiri">
+            <div class="seg" role="group" aria-label="Saring tema berdasarkan genre">
+          <button type="button" class="seg__tombol" data-genre="all" aria-pressed="true">Semua <span class="num">50</span></button>
+          <button type="button" class="seg__tombol" data-genre="editorial" aria-pressed="false">Editorial <span class="num">20</span></button>
+          <button type="button" class="seg__tombol" data-genre="modern-minimal" aria-pressed="false">Modern minimal <span class="num">12</span></button>
+          <button type="button" class="seg__tombol" data-genre="atmospheric" aria-pressed="false">Atmospheric <span class="num">9</span></button>
+          <button type="button" class="seg__tombol" data-genre="playful" aria-pressed="false">Playful <span class="num">9</span></button>
+            </div>
+            <ol class="daftar" data-daftar>
+          <li><button type="button" class="baris" data-slug="almanac" data-genre="editorial" aria-pressed="true"><span class="num">01</span><span class="baris__nama">Almanac</span><span class="baris__kertas num">84%</span></button></li>
+          <li><button type="button" class="baris" data-slug="arcade" data-genre="playful" aria-pressed="false"><span class="num">02</span><span class="baris__nama">Arcade</span><span class="baris__kertas num">14%</span></button></li>
+          <li><button type="button" class="baris" data-slug="atelier" data-genre="editorial" aria-pressed="false"><span class="num">03</span><span class="baris__nama">Atelier</span><span class="baris__kertas num">94.5%</span></button></li>
+          <li><button type="button" class="baris" data-slug="bloom" data-genre="atmospheric" aria-pressed="false"><span class="num">04</span><span class="baris__nama">Bloom</span><span class="baris__kertas num">97%</span></button></li>
+          <li><button type="button" class="baris" data-slug="blueprint" data-genre="modern-minimal" aria-pressed="false"><span class="num">05</span><span class="baris__nama">Blueprint</span><span class="baris__kertas num">35%</span></button></li>
+          <li><button type="button" class="baris" data-slug="broadside" data-genre="editorial" aria-pressed="false"><span class="num">06</span><span class="baris__nama">Broadside</span><span class="baris__kertas num">92%</span></button></li>
+          <li><button type="button" class="baris" data-slug="brutal" data-genre="editorial" aria-pressed="false"><span class="num">07</span><span class="baris__nama">Brutal</span><span class="baris__kertas num">97.5%</span></button></li>
+          <li><button type="button" class="baris" data-slug="carnival" data-genre="editorial" aria-pressed="false"><span class="num">08</span><span class="baris__nama">Carnival</span><span class="baris__kertas num">92%</span></button></li>
+          <li><button type="button" class="baris" data-slug="cobalt" data-genre="modern-minimal" aria-pressed="false"><span class="num">09</span><span class="baris__nama">Cobalt</span><span class="baris__kertas num">98.5%</span></button></li>
+          <li><button type="button" class="baris" data-slug="console" data-genre="modern-minimal" aria-pressed="false"><span class="num">10</span><span class="baris__nama">Console</span><span class="baris__kertas num">17%</span></button></li>
+          <li><button type="button" class="baris" data-slug="coral" data-genre="modern-minimal" aria-pressed="false"><span class="num">11</span><span class="baris__nama">Coral</span><span class="baris__kertas num">97%</span></button></li>
+          <li><button type="button" class="baris" data-slug="darkroom" data-genre="atmospheric" aria-pressed="false"><span class="num">12</span><span class="baris__nama">Darkroom</span><span class="baris__kertas num">12.5%</span></button></li>
+          <li><button type="button" class="baris" data-slug="dose" data-genre="modern-minimal" aria-pressed="false"><span class="num">13</span><span class="baris__nama">Dose</span><span class="baris__kertas num">97.6%</span></button></li>
+          <li><button type="button" class="baris" data-slug="dusk" data-genre="modern-minimal" aria-pressed="false"><span class="num">14</span><span class="baris__nama">Dusk</span><span class="baris__kertas num">17.5%</span></button></li>
+          <li><button type="button" class="baris" data-slug="editorial" data-genre="editorial" aria-pressed="false"><span class="num">15</span><span class="baris__nama">Editorial</span><span class="baris__kertas num">97%</span></button></li>
+          <li><button type="button" class="baris" data-slug="formwork" data-genre="editorial" aria-pressed="false"><span class="num">16</span><span class="baris__nama">Formwork</span><span class="baris__kertas num">74%</span></button></li>
+          <li><button type="button" class="baris" data-slug="furrow" data-genre="modern-minimal" aria-pressed="false"><span class="num">17</span><span class="baris__nama">Furrow</span><span class="baris__kertas num">96%</span></button></li>
+          <li><button type="button" class="baris" data-slug="garden" data-genre="editorial" aria-pressed="false"><span class="num">18</span><span class="baris__nama">Garden</span><span class="baris__kertas num">95.8%</span></button></li>
+          <li><button type="button" class="baris" data-slug="grid" data-genre="editorial" aria-pressed="false"><span class="num">19</span><span class="baris__nama">Grid</span><span class="baris__kertas num">97.5%</span></button></li>
+          <li><button type="button" class="baris" data-slug="halftone" data-genre="playful" aria-pressed="false"><span class="num">20</span><span class="baris__nama">Halftone</span><span class="baris__kertas num">96.2%</span></button></li>
+          <li><button type="button" class="baris" data-slug="hedgerow" data-genre="editorial" aria-pressed="false"><span class="num">21</span><span class="baris__nama">Hedgerow</span><span class="baris__kertas num">24%</span></button></li>
+          <li><button type="button" class="baris" data-slug="hum" data-genre="playful" aria-pressed="false"><span class="num">22</span><span class="baris__nama">Hum</span><span class="baris__kertas num">97%</span></button></li>
+          <li><button type="button" class="baris" data-slug="ink" data-genre="editorial" aria-pressed="false"><span class="num">23</span><span class="baris__nama">Ink</span><span class="baris__kertas num">99.5%</span></button></li>
+          <li><button type="button" class="baris" data-slug="kiln" data-genre="atmospheric" aria-pressed="false"><span class="num">24</span><span class="baris__nama">Kiln</span><span class="baris__kertas num">13%</span></button></li>
+          <li><button type="button" class="baris" data-slug="loom" data-genre="editorial" aria-pressed="false"><span class="num">25</span><span class="baris__nama">Loom</span><span class="baris__kertas num">95%</span></button></li>
+          <li><button type="button" class="baris" data-slug="lumen" data-genre="atmospheric" aria-pressed="false"><span class="num">26</span><span class="baris__nama">Lumen</span><span class="baris__kertas num">12.5%</span></button></li>
+          <li><button type="button" class="baris" data-slug="manifesto" data-genre="editorial" aria-pressed="false"><span class="num">27</span><span class="baris__nama">Manifesto</span><span class="baris__kertas num">13%</span></button></li>
+          <li><button type="button" class="baris" data-slug="midnight" data-genre="atmospheric" aria-pressed="false"><span class="num">28</span><span class="baris__nama">Midnight</span><span class="baris__kertas num">14%</span></button></li>
+          <li><button type="button" class="baris" data-slug="newsprint" data-genre="editorial" aria-pressed="false"><span class="num">29</span><span class="baris__nama">Newsprint</span><span class="baris__kertas num">94%</span></button></li>
+          <li><button type="button" class="baris" data-slug="overprint" data-genre="playful" aria-pressed="false"><span class="num">30</span><span class="baris__nama">Overprint</span><span class="baris__kertas num">91.5%</span></button></li>
+          <li><button type="button" class="baris" data-slug="pasteup" data-genre="playful" aria-pressed="false"><span class="num">31</span><span class="baris__nama">Paste-up</span><span class="baris__kertas num">73%</span></button></li>
+          <li><button type="button" class="baris" data-slug="piste" data-genre="playful" aria-pressed="false"><span class="num">32</span><span class="baris__nama">Piste</span><span class="baris__kertas num">98.5%</span></button></li>
+          <li><button type="button" class="baris" data-slug="refract" data-genre="atmospheric" aria-pressed="false"><span class="num">33</span><span class="baris__nama">Refract</span><span class="baris__kertas num">98.2%</span></button></li>
+          <li><button type="button" class="baris" data-slug="ribbon" data-genre="atmospheric" aria-pressed="false"><span class="num">34</span><span class="baris__nama">Ribbon</span><span class="baris__kertas num">98.5%</span></button></li>
+          <li><button type="button" class="baris" data-slug="rim" data-genre="modern-minimal" aria-pressed="false"><span class="num">35</span><span class="baris__nama">Rim</span><span class="baris__kertas num">9%</span></button></li>
+          <li><button type="button" class="baris" data-slug="riso" data-genre="editorial" aria-pressed="false"><span class="num">36</span><span class="baris__nama">Riso</span><span class="baris__kertas num">97%</span></button></li>
+          <li><button type="button" class="baris" data-slug="solstice" data-genre="editorial" aria-pressed="false"><span class="num">37</span><span class="baris__nama">Solstice</span><span class="baris__kertas num">94%</span></button></li>
+          <li><button type="button" class="baris" data-slug="specimen" data-genre="editorial" aria-pressed="false"><span class="num">38</span><span class="baris__nama">Specimen</span><span class="baris__kertas num">96.5%</span></button></li>
+          <li><button type="button" class="baris" data-slug="spore" data-genre="atmospheric" aria-pressed="false"><span class="num">39</span><span class="baris__nama">Spore</span><span class="baris__kertas num">15%</span></button></li>
+          <li><button type="button" class="baris" data-slug="sport" data-genre="editorial" aria-pressed="false"><span class="num">40</span><span class="baris__nama">Sport</span><span class="baris__kertas num">98%</span></button></li>
+          <li><button type="button" class="baris" data-slug="squeeze" data-genre="playful" aria-pressed="false"><span class="num">41</span><span class="baris__nama">Squeeze</span><span class="baris__kertas num">41%</span></button></li>
+          <li><button type="button" class="baris" data-slug="sticker" data-genre="playful" aria-pressed="false"><span class="num">42</span><span class="baris__nama">Sticker</span><span class="baris__kertas num">95.7%</span></button></li>
+          <li><button type="button" class="baris" data-slug="studio" data-genre="editorial" aria-pressed="false"><span class="num">43</span><span class="baris__nama">Studio</span><span class="baris__kertas num">97.2%</span></button></li>
+          <li><button type="button" class="baris" data-slug="terminal" data-genre="atmospheric" aria-pressed="false"><span class="num">44</span><span class="baris__nama">Terminal</span><span class="baris__kertas num">12.5%</span></button></li>
+          <li><button type="button" class="baris" data-slug="terrazzo" data-genre="modern-minimal" aria-pressed="false"><span class="num">45</span><span class="baris__nama">Terrazzo</span><span class="baris__kertas num">96%</span></button></li>
+          <li><button type="button" class="baris" data-slug="ultraviolet" data-genre="modern-minimal" aria-pressed="false"><span class="num">46</span><span class="baris__nama">Ultraviolet</span><span class="baris__kertas num">95%</span></button></li>
+          <li><button type="button" class="baris" data-slug="vantage" data-genre="modern-minimal" aria-pressed="false"><span class="num">47</span><span class="baris__nama">Vantage</span><span class="baris__kertas num">13.5%</span></button></li>
+          <li><button type="button" class="baris" data-slug="vellum" data-genre="editorial" aria-pressed="false"><span class="num">48</span><span class="baris__nama">Vellum</span><span class="baris__kertas num">94%</span></button></li>
+          <li><button type="button" class="baris" data-slug="wayfind" data-genre="modern-minimal" aria-pressed="false"><span class="num">49</span><span class="baris__nama">Wayfind</span><span class="baris__kertas num">95.5%</span></button></li>
+          <li><button type="button" class="baris" data-slug="werkstatt" data-genre="playful" aria-pressed="false"><span class="num">50</span><span class="baris__nama">Werkstatt</span><span class="baris__kertas num">84%</span></button></li>
+            </ol>
+            <div class="kaki-daftar">
+              <button type="button" class="btn btn--garis" data-acak>Acak satu tema</button>
+            </div>
+          </div>
+
+          <div class="katalog__kanan">
+            <figure class="pratinjau" data-pratinjau>
+              <img src="assets/themes/almanac.webp" width="400" height="250" alt="Contoh halaman bertema Almanac, Workbench, Stage hero." data-gambar>
+              <figcaption data-caption>Almanac. Workbench, Stage hero.</figcaption>
+            </figure>
+            <div class="rincian">
+              <h3 data-nama>Almanac</h3>
+              <p class="bahan" data-bahan>Cool slate stock, blue-black ink, Hanken Grotesk over Newsreader, one chart magenta.</p>
+              <dl class="data">
+                <div><dt>Genre</dt><dd data-genre>Editorial</dd></div>
+                <div><dt>Huruf tampilan</dt><dd data-huruf>Hanken Grotesk</dd></div>
+                <div><dt>Kertas</dt><dd data-kertas>Mid, 84%, rona 245</dd></div>
+                <div><dt>Sinyal</dt><dd data-sinyal>chromatic-magenta, rona 350</dd></div>
+              </dl>
+              <div class="swatch" data-swatch aria-label="Tiga warna pokok tema yang dipilih">
+                <span class="swatch__item"><i aria-hidden="true"></i>Kertas</span>
+                <span class="swatch__item"><i aria-hidden="true"></i>Tinta</span>
+                <span class="swatch__item"><i aria-hidden="true"></i>Sinyal</span>
+              </div>
+              <a class="tautan" data-link href="https://www.usehallmark.com/themes/almanac/">Lihat halaman tema ini</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bag" id="aturan" aria-labelledby="aturan-judul">
+      <div class="wrap">
+        <div class="kepala">
+          <h2 id="aturan-judul">Aturan yang tidak ditawar</h2>
+          <p class="lede">Empat dari enam belas aturan lantai.</p>
+        </div>
+        <ol class="aturan">
+          <li>
+            <h3>Warna lewat token</h3>
+            <p>Setiap warna dan huruf dideklarasikan di root, tidak ditulis langsung.</p>
+          </li>
+          <li>
+            <h3>Fokus muncul seketika</h3>
+            <p>Kendali punya keadaan fokus, aktif dan nonaktif. Cincin fokus tanpa transisi.</p>
+          </li>
+          <li>
+            <h3>Tanpa label kecil</h3>
+            <p>Tidak ada eyebrow atau kapital berjarak. Keterangan memakai wajah teks.</p>
+          </li>
+          <li>
+            <h3>Gerak punya jalan mundur</h3>
+            <p>Isi terbaca tanpa skrip. Transisi punya pengganti saat gerak dikurangi.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="banding" id="alur" aria-labelledby="alur-judul">
+      <div class="wrap">
+        <div class="kepala kepala--banding">
+          <h2 id="alur-judul">Dari kalimat ke halaman</h2>
+          <p class="lede">Empat langkah yang tercatat di README repositori.</p>
+        </div>
+        <table class="alur">
+          <thead>
+            <tr><th scope="col">No</th><th scope="col">Tahap</th><th scope="col">Keluaran</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="num">01</td><td>Pre-flight</td><td>Bahan nyata dibaca sekali.</td></tr>
+            <tr><td class="num">02</td><td>Deal</td><td>Tiga tema ditawarkan, satu dipilih.</td></tr>
+            <tr><td class="num">03</td><td>Build</td><td>Hero dibangun dan diulas dulu.</td></tr>
+            <tr><td class="num">04</td><td>Sweep</td><td>Linter berjalan, lalu ulasan segar.</td></tr>
+          </tbody>
+        </table>
+        <div class="salinan">
+          <p class="salinan__kalimat">Satu baris untuk memasangnya.</p>
+          <div class="salinan__kotak">
+            <code>npx skills add nutlope/hallmark -g</code>
+            <button class="btn btn--garis btn--kecil" type="button" data-salin aria-label="Salin perintah pemasangan">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.25" y="5.25" width="8" height="8" rx="1.5"/><path d="M10.75 5.25V4.5a1.75 1.75 0 0 0-1.75-1.75H4.5A1.75 1.75 0 0 0 2.75 4.5V9a1.75 1.75 0 0 0 1.75 1.75h.75"/></svg>
+              <span data-salin-teks>Salin perintah</span>
+            </button>
+          </div>
+          <p class="fine" data-status aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="bag" id="pelat" aria-labelledby="pelat-judul">
+      <div class="wrap">
+        <div class="kepala">
+          <h2 id="pelat-judul">Tiga halaman jadi</h2>
+          <p class="lede">Gambar contoh dari repositori.</p>
+        </div>
+        <div class="pelat-grid">
+          <figure class="pelat">
+            <img src="assets/plates/hedgerow.webp" width="960" height="600" alt="Halaman Five Mile Gin dalam tema Hedgerow." loading="lazy">
+            <figcaption>Hedgerow, Five Mile Gin.</figcaption>
+          </figure>
+          <figure class="pelat">
+            <img src="assets/plates/atelier.webp" width="960" height="600" alt="Halaman Maison Orla dalam tema Atelier." loading="lazy">
+            <figcaption>Atelier, Maison Orla.</figcaption>
+          </figure>
+          <figure class="pelat">
+            <img src="assets/plates/furrow.webp" width="960" height="600" alt="Halaman Fieldbook dalam tema Furrow." loading="lazy">
+            <figcaption>Furrow, Fieldbook.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="kaki">
+    <div class="wrap kaki__grid">
+      <div>
+        <a class="brand brand--kaki" href="#atas"><span class="brand__slash" aria-hidden="true">/</span>hallmark</a>
+        <p>Desain berdasarkan repositori Hallmark, lisensi MIT.</p>
+      </div>
+      <div>
+        <p class="kaki__judul">Pasang</p>
+        <code>npx skills add nutlope/hallmark -g</code>
+      </div>
+      <div>
+        <p class="kaki__judul">Sumber</p>
+        <a href="https://github.com/charyuseai-cmd/hallmark">Repositori GitHub</a>
+        <a href="https://www.usehallmark.com">usehallmark.com</a>
+      </div>
+    </div>
+    <div class="wrap">
+      <p class="kaki__bawah">Foto dari Wikimedia Commons. Teks bahan dari berkas rujukan repositori.</p>
+    </div>
+  </footer>
+</body>
+</html>
