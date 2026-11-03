@@ -1,106 +1,99 @@
-# Hardware Explorer · edisi Vantage
+# Assembly · hardware anatomy lab
 
-Remake penuh dari Hardware Explorer. Sistem rupa, komposisi dan objek 3D diganti; **seluruh konten dan kabel tetap**: tujuh tahap edukatif, kamera yang mendekati CPU/RAM/GPU, komponen yang lepas, tampilan exploded, kembali ke posisi semula, dan penutup rakit utuh.
+Assembly is the interactive educational page in this repository. It is deliberately a browser-native, multi-section exhibition rather than a storefront or product landing page.
 
-## Catatan gambar referensi
+## What changed
 
-Sampai turn ini **tidak ada berkas gambar yang diunggah pengguna** ke workspace, meski brief awal meminta gambar referensi dipakai sebagai arahan utama. Yang tersedia hanyalah aset repo. Karena itu arahan visual diambil dari dua berkas repo, bukan dari unggahan:
+The page now contains three independent hardware studies:
 
-| Berkas | Yang dibaca |
-| --- | --- |
-| `skills/hallmark/references/themes/vantage.jpg` | Ground biru-hitam, point cloud objek hasil pindai, sweep yang menyalakan titik, Geologica 300 dengan sudut tajam, bingkai hairline dengan corner ticks, angka dengan satuan, satu sinyal lime untuk yang ditemukan |
-| `site/assets/themes/vantage.webp` | Tangkapan layar tema yang sama: visualisasi teknis 3D gelap, label ukur, metrik, lime hanya pada penanda |
-| `site/assets/themes/blueprint.webp` | Dipakai pada versi sebelumnya (cyanotype), sengaja ditinggalkan agar remake tidak menjadi restyle |
+1. **PC anatomy** — motherboard, CPU, memory, GPU, NVMe storage, power supply, cooling and case/airflow.
+2. **Cooling loop** — cold plate, pump, coolant path, radiator, radiator fans, and mounting/interface hardware.
+3. **Mechanical keyboard** — case, switch plate, mechanical switches, keycaps, PCB/matrix, stabilizers, and controller/USB.
 
-Prinsip yang diterjemahkan: ground gelap tanpa gradien, titik tanpa garis penghubung dan tanpa bloom, tinta baja, tipografi sentence case tanpa mono, angka tabular dengan satuan, frame hanya di sudut, lime khusus untuk *ditemukan / hidup / aksi utama*. Bila gambar referensi kemudian diunggah, analisis ulang sebelum hasil dianggap final.
+Every component is represented by a named Three.js group and has a shared education record with:
 
-## Arahan repo yang dijalankan
+- `componentId`
+- `componentName`
+- `description`
+- `primaryFunction`
+- `howItWorks`
+- `relatedComponents`
+- `meshNodeName`
+- `cameraFocus`
+- `animationSequence`
+- `referenceImages`
+- `technicalSources`
 
-| Langkah | Perintah | Hasil |
+The records live in `app.js` under `HARDWARE`. The same records generate the step cards, stage labels, camera targets, component highlight, related-component chips and source links.
+
+## Interaction model
+
+Each exhibition follows the same learning loop without making the compositions identical:
+
+- The complete assembly is visible before activation.
+- Clicking the canvas or **Enter exploration** activates that exhibition.
+- The pinned stage is a real Three.js scene; the copy column becomes a scroll-linked sequence.
+- A single ScrollTrigger progress value drives the camera, component offsets, opacity, highlight and educational step.
+- Every section has previous/next controls and its step cards are keyboard reachable.
+- Clicking a visible 3D part routes to that component's learning state when the browser raycaster can identify it.
+- The final two states show an exploded system map, then return the complete assembly before the next hardware section continues below the white divider.
+- `prefers-reduced-motion` keeps the content usable and removes animated scroll interpolation.
+- If WebGL is unavailable, the learning cards and technical sources remain available with an inline fallback note.
+
+## 3D implementation
+
+The prototype uses original procedural geometry rather than an inseparable stock model. This keeps the model inspectable in a repository with no downloaded manufacturer CAD files:
+
+- `BoxGeometry`, `CylinderGeometry`, `TorusGeometry` and `TubeGeometry` make the identifiable parts.
+- Each educational component is a `THREE.Group` whose `name` is the record's `meshNodeName`.
+- Component transforms start from `home`, pass through a focus offset, and finish at an exploded offset.
+- Meshes use standard materials, a restrained blue/steel palette and one lime focus signal.
+- There is no post-processing or autoplay loop. The renderer only paints on interaction, resize or scroll updates.
+- Pixel ratio, antialiasing and shadows are reduced on smaller screens.
+
+These are teaching models, not manufacturer-accurate CAD assets. The copy explains standard component roles and links to manufacturer or standards documentation; it does not claim a particular brand or board revision.
+
+## Visual references and attribution
+
+Each exhibition contains a real hardware photograph plus a supplied visual study. The local files are shown in the section reference rail, while the open-licensed photographs are also shown in the Reference desk:
+
+| File | Use | Credit / license |
 | --- | --- | --- |
-| Deal | `theme.mjs deal --genre modern-minimal --prompt "three dimensional point cloud scan of a computer motherboard..."` | 1. Vantage · 2. Rim · 3. Cobalt |
-| Pilih | Lihat `vantage.jpg`, `rim.jpg`, `cobalt.jpg` | **Vantage**: materialnya memang pindai 3D; Rim mengandalkan foto udara, Cobalt mengandalkan lembar ASCII terang |
-| Draw | `theme.mjs draw --material product --job try --theme vantage` | `180c3e` · Narrative Workflow · hero Corridor · nav floating pill · footer statement |
-| Scaffold | `theme.mjs scaffold vantage --dealt "1/3, seed ..."` | `tokens.css` + `base.css`, stamp dan import |
-| Gates | `SKILL.md` Floor, `gates.md` § 1–4, `craft.md`, `layout.md`, `scroll-choreography.md` | satu pola gulir, bukan dua |
+| `pc-motherboard-photo.jpg` | Motherboard installed in a case | Kurt Kaiser, Wikimedia Commons, CC0 |
+| `cooling-waterblock-photo.jpg` | Water block and tubing in a PC | MasterMatt, Wikimedia Commons, public domain |
+| `keyboard-keycaps-photo.jpg` | Keycaps and switches | snuci, Wikimedia Commons, public domain |
+| `pc-anatomy-reference.jpg` | Provided PC anatomy study | Supplied with the brief |
+| `cooling-system-reference.jpg` | Provided cooling study | Supplied with the brief |
+| `power-core-reference.jpg` | Provided exploded mechanism study | Supplied with the brief |
 
-Satu penyimpangan yang dicatat: Vantage menggerakkan awan titik dan sweep secara otonom, tetapi brief inti melarang autoplay berbasis waktu. **Sapuan dan rotasi kamera sepenuhnya digerakkan `ScrollTrigger scrub`**, sehingga aturan pengguna mengalahkan tema. Rotasi lambat otonom tidak dipakai.
+The source page for every Wikimedia image is linked in the UI and in `ASSETS.md`. The supplied screenshots are labelled as visual references and are not claimed as photographs of the procedural models. Technical links are rendered beside the relevant component cards and repeated in the Reference desk.
 
-## Picks
+Asset provenance and runtime library notes are documented separately in `ASSETS.md`.
 
-**Hallmark · v2.0.0**
+## Run locally
 
-- **Redesign** · full · 1 halaman (`hardware-explorer/`) · before: cyanotype Blueprint statis, tujuh tahap
-- **Keeps** · semua tautan, `id`, handler, tujuh tahap teks, register, diagram alternatif · wiring Three.js + GSAP ScrollTrigger
-- **Files** · edit: `index.html`, `style.css`, `app.js`, `DESIGN.md`, `Hardware-Explorer-standalone.html` · create: `tokens.css`, `base.css` · delete: none
-- **Shape** · Narrative Workflow, draw `180c3e` · genre modern-minimal · job: try
-- **Theme** · Vantage, dealt 1/3 · `vantage: object/steel` · mengalahkan Rim dan Cobalt karena bendanya adalah pindai 3D, bukan foto atau field ASCII
-- **Chrome** · nav: floating pill · footer: statement
-- **Hero** · Corridor: head di lima kolom kiri, awan titik di tujuh kolom kanan, satu angka dalam corner ticks, satu callout hidup
-- **Signature** · papan induk berupa point cloud yang mengeraskan menjadi geometri padu saat gulir menjalankan sapuan lime
-- **Sections** · Hero · Penjelajahan · Lapisan · Register pindai · Potongan · Utuh kembali · Footer
-- **Material** · real: tujuh posisi kamera, tujuh grup komponen, empat lapisan titik · pictures: produk dibangun live · absent: logo, kutipan, metrik, foto stok
-- **Sweep** · `0 FAIL · 0 REFLEX · 0 WARN` (static) · `--render` tidak dijalankan
-
-## Adegan 3D
-
-| Tahap | Kamera | Fokus | Yang terjadi |
-| --- | --- | --- | --- |
-| 00 | `(0, 7.5, 13.5)` | Rakit utuh | Awan titik penuh, sapuan di bawah papan |
-| 01 | `(-3.0, 2.8, 4.8)` | CPU | Sapuan melewati soket, cpu terangkat, solid cpu mengeras |
-| 02 | `(2.8, 2.6, 4.4)` | RAM | Empat keping naik, kamera bergeser kanan |
-| 03 | `(0.6, 2.2, 5.4)` | GPU | Kartu dan dua kipas terangkat dari slot |
-| 04 | `(4.4, 3.0, 5.2)` | Daya dan simpan | Drive, regulator dan port ikut lepas |
-| 05 | `(0, 9.5, 15.5)` | Exploded | Semua grup bergerak keluar dengan rotasi kecil |
-| 06 | `(0, 6.8, 12.5)` | Assembly | Semua kembali ke `home`, papan utuh |
-
-Objeknya asli: `BoxGeometry`, `CylinderGeometry`, `LineSegments` jalur tembaga, `MeshStandardMaterial`, dan `THREE.Points` dengan `ShaderMaterial`. Tidak ada GLB, tekstur eksternal, atau gambar diam. Titik diambil dari permukaan geometri yang sama, sehingga ikut bergerak saat komponen lepas. Shader membaca `uSweepY`, `uFoundGroup` dan empat `uLayer*` dari satu timeline yang sama.
-
-## Interaksi dan akses
-
-- **Satu timeline** `gsap.timeline` dengan `ScrollTrigger` `trigger: #journey`, `start: top top`, `end: bottom bottom`, `scrub: 0.8`, `invalidateOnRefresh`, **tanpa pin**. `onUpdate` menyatukan kamera, objek, shader, HUD, rail, tujuh tombol tahap dan `aria-live`.
-- **Tombol tahap** menggulir ke progres yang bersesuaian; **empat sakelar lapisan** benar-benar menyembunyikan kelompok titik lewat uniform shader.
-- **Satu callout** mengikuti proyeksi komponen aktif: hairline, titik 3px, label, angka dengan satuan.
-- **Mobile**: DPR 1,25, jumlah titik dipangkas, antialias dan bayangan mati, kanvas penuh di belakang panel teks solid, HUD disembunyikan, tabel ditumpuk per baris, diagram `<details>` tetap ada.
-- **Reduced motion**: timeline tidak dibuat, kamera di posisi akhir, semua solid tampil, seluruh teks terbaca, callout dan isyarat gulir disembunyikan.
-- **Tanpa JS**: seluruh langkah, register dan diagram sudah terlihat di CSS dasar; kanvas hanya dekorasi.
-- **Performa**: render sesuai kebutuhan lewat `gsap.ticker`, jeda saat `document.hidden`, geometri dipakai ulang, tidak ada postprocessing/bloom, pustaka divendor lokal.
-
-## Mutu dan cara menjalankan
+From the repository root:
 
 ```sh
 python3 -m http.server 4173 --bind 0.0.0.0 --directory hardware-explorer
 ```
 
+Then open `http://localhost:4173/`.
+
+The scene dependencies are already vendored in `vendor/`; no package installation or lockfile change is required.
+
+## Checks run
+
 ```sh
-node skills/hallmark/scripts/sloplint.mjs \
-  hardware-explorer/index.html hardware-explorer/style.css \
-  hardware-explorer/tokens.css hardware-explorer/base.css --genre modern-minimal
+node --check hardware-explorer/app.js
+curl -I http://localhost:4173/
 ```
 
-Hasil: **0 FAIL, 0 REFLEX, 0 WARN across 4 file(s)**. `node --check` lolos. Smoke test Node dengan `WebGLRenderer` bertubit lolos: geometri, shader points, master timeline, sakelar lapisan dan sinkronisasi UI terbentuk tanpa error runtime. Tingkat `--render` belum dijalankan karena sandbox tidak memiliki Chrome atau `puppeteer-core`; lipatan, kontras piksel dan fokus dengan tab perlu dicek di browser. Font Google punya fallback `ui-sans-serif`.
+The JavaScript syntax check and local asset smoke check pass. A headless visual audit was not run because this sandbox does not include Chrome, Puppeteer or Playwright. The intended follow-up is a desktop browser pass at 1440 × 900 and 1280 × 800, then a mobile pass, checking WebGL context creation, backward scroll, reduced motion, keyboard focus and console output.
 
-## Akses publik
+## Known limitations
 
-Pratinjau Arena memakai host `*.e2b.app` yang tidak selalu terbuka dari jaringan pengguna, dan endpoint GitHub Pages mengembalikan `403 Resource not accessible by integration` untuk token integrasi repo ini. Jalur alternatif:
-
-1. **Halaman live tanpa unduhan**, memakai berkas mandiri:
-   `https://htmlpreview.github.io/?https://raw.githubusercontent.com/charyuseai-cmd/hallmark/refs/heads/arena/c5662565-hallmark/hardware-explorer/Hardware-Explorer-standalone.html`
-2. **Berkas untuk dibuka lokal** dari `file://`:
-   `hardware-explorer/Hardware-Explorer-standalone.html`
-3. **Versi multi-berkas** untuk di-host sendiri: folder `hardware-explorer/` atau salinan `docs/`.
-
-Berkas mandiri dibuat dengan `esbuild --bundle --format=iife`, lalu `tokens.css`, `base.css`, `style.css`, GSAP, ScrollTrigger dan bundel disisipkan ke `index.html`. Tidak ada `src`/`href` eksternal tersisa; Google Fonts sengaja dihapus agar fallback sistem bekerja luring.
-
-## Berkas
-
-| Berkas | Isi |
-| --- | --- |
-| `index.html` | Hero, tujuh tahap, HUD, callout, sakelar, register, potongan, penutup |
-| `tokens.css` | Token Vantage dari scaffold repo plus tiga token adegan |
-| `base.css` | Aturan Floor dari scaffold repo |
-| `style.css` | Stamp, komposisi Corridor, corner ticks, kontrol, responsif, reduced motion |
-| `app.js` | Point cloud, shader sapuan, tujuh grup, master timeline, sinkronisasi UI, potongan 2D |
-| `vendor/` | Three.js 0.187.0 dan GSAP ScrollTrigger 3.15.0 lokal |
-| `Hardware-Explorer-standalone.html` | Satu berkas mandiri |
-| `DESIGN.md` | Dokumen ini |
+- The 3D assets are procedural teaching abstractions, not production GLB/CAD imports.
+- The supplied visual references are screenshots/render studies, not part-specific photographs. The page also includes three local CC0 or public-domain hardware photographs for comparison.
+- Some external technical links may change their URL or documentation layout over time.
+- Raycasting selects a component when a visible mesh is under the pointer; the step cards and previous/next controls are the deterministic accessible path.

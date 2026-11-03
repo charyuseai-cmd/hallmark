@@ -1,5 +1,7 @@
-/* Hardware Explorer · Vantage. Satu kanvas Three.js, satu timeline GSAP ScrollTrigger.
- * Gulir menggerakkan kamera, transformasi objek, sapuan titik dan teks secara bersamaan. */
+/* Assembly / hardware anatomy lab
+ * One reusable data model powers the educational copy, the camera states and the component names.
+ * The 3D objects are procedural teaching models: compact, identifiable and licensed as original code.
+ */
 import * as THREE from './vendor/three.module.js';
 
 (() => {
@@ -10,568 +12,996 @@ import * as THREE from './vendor/three.module.js';
   if (!gsap || !ScrollTrigger) return;
   gsap.registerPlugin(ScrollTrigger);
 
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const mobile = window.matchMedia('(max-width: 760px)').matches;
-  const canvas = document.getElementById('scene');
-  const profileCanvas = document.getElementById('profile');
-  const body = document.body;
-  const root = document.documentElement;
-
-  const steps = Array.from(document.querySelectorAll('.step'));
-  const stageButtons = Array.from(document.querySelectorAll('.stage'));
-  const hudTahap = document.querySelector('[data-hud-tahap]');
-  const hudNo = document.querySelector('[data-hud-no]');
-  const hudPersen = document.querySelector('[data-hud-persen]');
-  const rail = document.querySelector('[data-rail]');
-  const announce = document.querySelector('[data-announce]');
-  const calloutLabel = document.querySelector('[data-callout-label]');
-  const calloutFig = document.querySelector('[data-callout-fig]');
-
-  const LABELS = [
-    'Rakit utuh', 'Unit pemroses', 'Memori', 'Grafis',
-    'Daya dan simpan', 'Tampilan lepas', 'Utuh kembali',
-  ];
-  const CALLOUT_LABELS = [
-    'Soket prosesor', 'Soket prosesor', 'Keping memori', 'Kartu grafis',
-    'Drive dan regulator', 'Peta letak lepas', 'Papan utuh',
-  ];
-
-  /* Warna dibaca dari token CSS, lalu diubah ke sRGB untuk Three.js. */
-  const rootStyle = getComputedStyle(root);
-  function oklchToHex(L, C, H) {
-    const h = (H * Math.PI) / 180;
-    const a = C * Math.cos(h);
-    const b = C * Math.sin(h);
-    const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
-    const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
-    const s = (L - 0.0894841775 * a - 1.2914855480 * b) ** 3;
-    const ch = [
-      4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
-      -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
-      -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s,
-    ].map((v) => Math.round(Math.max(0, Math.min(1, v)) * 255));
-    return '#' + ch.map((v) => v.toString(16).padStart(2, '0')).join('');
-  }
-  function token(name) {
-    const raw = rootStyle.getPropertyValue(name).trim();
-    const m = /oklch\(\s*([\d.]+)%\s+([\d.]+)\s+([\d.]+)(?:deg)?\s*(?:\/\s*([\d.]+%?))?\s*\)/.exec(raw);
-    if (!m) return { hex: '#ffffff', alpha: 1 };
-    const L = parseFloat(m[1]) / 100;
-    const C = parseFloat(m[2]);
-    const H = parseFloat(m[3]);
-    let alpha = 1;
-    if (m[4]) alpha = m[4].endsWith('%') ? parseFloat(m[4]) / 100 : parseFloat(m[4]);
-    return { hex: oklchToHex(L, C, H), alpha };
-  }
-  const C = {
-    paper: token('--color-paper'), paper2: token('--color-paper-2'), paper3: token('--color-paper-3'),
-    ink: token('--color-ink'), ink2: token('--color-ink-2'), muted: token('--color-muted'),
-    rule: token('--color-rule'), rule2: token('--color-rule-2'),
-    accent: token('--color-accent'), pointLo: token('--point-lo'),
-    pointMid: token('--point-mid'), pointHi: token('--point-hi'),
-  };
-  const col = (t) => new THREE.Color(t.hex);
-
-  let renderer;
-  try {
-    renderer = new THREE.WebGLRenderer({
-      canvas, antialias: !mobile, alpha: true, powerPreference: 'high-performance',
-    });
-  } catch (err) {
-    body.classList.add('is-static');
-    drawProfile();
-    return;
-  }
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.75));
-  renderer.setClearColor(col(C.paper), 0);
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.04;
-  renderer.shadowMap.enabled = !mobile;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-  const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(col(C.paper), 0.011);
-  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-  camera.position.set(0, 7.5, 13.5);
-
-  const hemi = new THREE.HemisphereLight(col(C.ink), col(C.paper3), 1.35);
-  scene.add(hemi);
-  const keyLight = new THREE.DirectionalLight(col(C.ink), 2.1);
-  keyLight.position.set(-5, 10, 7);
-  keyLight.castShadow = !mobile;
-  keyLight.shadow.mapSize.set(1024, 1024);
-  keyLight.shadow.camera.left = -9; keyLight.shadow.camera.right = 9;
-  keyLight.shadow.camera.top = 9; keyLight.shadow.camera.bottom = -9;
-  keyLight.shadow.camera.near = 1; keyLight.shadow.camera.far = 30;
-  scene.add(keyLight);
-  const rim = new THREE.DirectionalLight(col(C.muted), 1.1);
-  rim.position.set(7, 5, -9);
-  scene.add(rim);
-  const fill = new THREE.PointLight(col(C.pointMid), 14, 28);
-  fill.position.set(2, 4, 6);
-  scene.add(fill);
-
-  const rig = new THREE.Group();
-  rig.rotation.set(0.02, -0.18, 0);
-  scene.add(rig);
-
-  /* Shader titik: sapuan scroll-driven, tanpa bloom, tanpa garis penghubung. */
-  const uniforms = {
-    uSweepY: { value: -1.2 },
-    uSweepWidth: { value: 0.55 },
-    uFoundGroup: { value: -1 },
-    uLime: { value: col(C.accent) },
-    uWhite: { value: col(C.pointHi) },
-    uLayer0: { value: 1 }, uLayer1: { value: 1 }, uLayer2: { value: 1 }, uLayer3: { value: 1 },
-    uSize: { value: mobile ? 1.7 : 2.2 },
-    uPixelRatio: { value: renderer.getPixelRatio() },
-  };
-  const scanMaterial = new THREE.ShaderMaterial({
-    uniforms,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.NormalBlending,
-    vertexShader: `
-      attribute vec3 aColor;
-      attribute float aLayer;
-      attribute float aGroup;
-      uniform float uSweepY, uSweepWidth, uFoundGroup;
-      uniform float uLayer0, uLayer1, uLayer2, uLayer3, uSize, uPixelRatio;
-      uniform vec3 uLime, uWhite;
-      varying vec3 vColor;
-      varying float vAlpha;
-      void main() {
-        float on = aLayer < 0.5 ? uLayer0 : (aLayer < 1.5 ? uLayer1 : (aLayer < 2.5 ? uLayer2 : uLayer3));
-        vec4 world = modelMatrix * vec4(position, 1.0);
-        float d = abs(world.y - uSweepY);
-        float lift = 1.0 - smoothstep(0.0, uSweepWidth, d);
-        float found = 1.0 - step(0.5, abs(aGroup - uFoundGroup));
-        float foundLayer = 1.0 - step(0.5, abs(aLayer - 3.0));
-        vec3 c = mix(aColor, uWhite, lift * 0.72 * (1.0 - found));
-        c = mix(c, uLime, found * (0.35 + lift * 0.65));
-        c = mix(c, uLime, foundLayer * 0.8);
-        vColor = c;
-        vec4 mv = viewMatrix * world;
-        float depth = -mv.z;
-        vAlpha = on * mix(0.3, 1.0, 1.0 - smoothstep(6.0, 22.0, depth)) * (0.55 + lift * 0.45);
-        gl_PointSize = on * clamp(uSize * uPixelRatio * (10.0 / max(depth, 0.5)), 1.0, 6.0);
-        gl_Position = projectionMatrix * mv;
-      }
-    `,
-    fragmentShader: `
-      varying vec3 vColor;
-      varying float vAlpha;
-      void main() {
-        vec2 c = gl_PointCoord - 0.5;
-        float r = dot(c, c);
-        if (r > 0.25) discard;
-        float edge = 1.0 - smoothstep(0.14, 0.25, r);
-        gl_FragColor = vec4(vColor, vAlpha * edge);
-        #include <tonemapping_fragment>
-        #include <colorspace_fragment>
-      }
-    `,
-  });
-
-  let seed = 7;
-  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-  const profilePoints = [];
-  const lo = col(C.pointLo), mid = col(C.pointMid), hi = col(C.pointHi);
-
-  function samplePoint(def) {
-    if (def.k === 'cyl') {
-      const a = rnd() * Math.PI * 2;
-      const y = (rnd() - 0.5) * def.h;
-      const r = def.r * (0.96 + rnd() * 0.04);
-      return [def.x + Math.cos(a) * r, def.y + y, def.z + Math.sin(a) * r];
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const lowPower = window.matchMedia('(max-width: 820px)').matches;
+  const supportsWebGL = (() => {
+    try {
+      const test = document.createElement('canvas');
+      return Boolean(window.WebGLRenderingContext && (test.getContext('webgl') || test.getContext('experimental-webgl')));
+    } catch (error) {
+      return false;
     }
-    const face = (rnd() * 6) | 0;
-    const u = rnd() - 0.5, v = rnd() - 0.5;
-    const hw = def.w / 2, hh = def.h / 2, hd = def.d / 2;
-    if (face === 0) return [def.x + u * def.w, def.y + hh, def.z + v * def.d];
-    if (face === 1) return [def.x + u * def.w, def.y - hh, def.z + v * def.d];
-    if (face === 2) return [def.x + hw, def.y + u * def.h, def.z + v * def.d];
-    if (face === 3) return [def.x - hw, def.y + u * def.h, def.z + v * def.d];
-    if (face === 4) return [def.x + u * def.w, def.y + v * def.h, def.z + hd];
-    return [def.x + u * def.w, def.y + v * def.h, def.z - hd];
-  }
+  })();
 
-  function scanPoints(parent, defs, count, layer, groupId, home) {
-    const pos = new Float32Array(count * 3);
-    const rgb = new Float32Array(count * 3);
-    const lay = new Float32Array(count);
-    const grp = new Float32Array(count);
-    for (let i = 0; i < count; i += 1) {
-      const p = samplePoint(defs[(rnd() * defs.length) | 0]);
-      pos.set(p, i * 3);
-      const t = Math.max(0, Math.min(1, (p[1] + home[1] + 0.2) / 1.7));
-      const c = t < 0.5 ? lo.clone().lerp(mid, t * 2) : mid.clone().lerp(hi, (t - 0.5) * 2);
-      rgb.set([c.r, c.g, c.b], i * 3);
-      lay[i] = layer;
-      grp[i] = groupId;
-      if (i % 41 === 0) profilePoints.push({ x: p[0] + home[0], y: p[1] + home[1] });
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute('aColor', new THREE.BufferAttribute(rgb, 3));
-    geo.setAttribute('aLayer', new THREE.BufferAttribute(lay, 1));
-    geo.setAttribute('aGroup', new THREE.BufferAttribute(grp, 1));
-    const pts = new THREE.Points(geo, scanMaterial);
-    pts.renderOrder = 2;
-    parent.add(pts);
-    return pts;
-  }
+  const COLORS = {
+    ink: 0xf2f4f5,
+    muted: 0x75818d,
+    accent: 0xd9ff5a,
+    blue: 0x73a9ff,
+    blueDeep: 0x264b72,
+    orange: 0xff9d70,
+    board: 0x1e2b38,
+    boardEdge: 0x46667e,
+    graphite: 0x28333e,
+    graphiteDark: 0x111820,
+    steel: 0x8d9ba5,
+    steelLight: 0xc3cbd0,
+    copper: 0xb57854,
+    white: 0xdce7ee,
+  };
 
-  function solidMaterial() {
-    return new THREE.MeshStandardMaterial({
-      color: col(C.paper2), roughness: 0.68, metalness: 0.38,
-      transparent: true, opacity: 0.12, depthWrite: false,
-    });
-  }
-
-  /* Tujuh grup: papan, cpu, ram, gpu, storage, vrm, io. */
-  const DEFS = [
-    { name: 'board', home: [0, 0, 0], layer: 0, count: mobile ? 2600 : 6200, parts: [
-      { k: 'box', w: 10, h: 0.18, d: 7, x: 0, y: 0, z: 0 },
-      { k: 'box', w: 10, h: 0.02, d: 7, x: 0, y: 0.1, z: 0 },
-    ] },
-    { name: 'cpu', home: [-1.5, 0.2, -0.6], layer: 2, count: mobile ? 1300 : 3200, parts: [
-      { k: 'box', w: 2.2, h: 0.1, d: 2.2, x: 0, y: 0, z: 0 },
-      { k: 'box', w: 1.5, h: 0.08, d: 1.5, x: 0, y: 0.09, z: 0 },
-      { k: 'box', w: 1.8, h: 0.1, d: 1.8, x: 0, y: 0.2, z: 0 },
-      { k: 'box', w: 1.8, h: 0.5, d: 0.06, x: 0, y: 0.45, z: -0.5 },
-      { k: 'box', w: 1.8, h: 0.5, d: 0.06, x: 0, y: 0.45, z: -0.25 },
-      { k: 'box', w: 1.8, h: 0.5, d: 0.06, x: 0, y: 0.45, z: 0 },
-      { k: 'box', w: 1.8, h: 0.5, d: 0.06, x: 0, y: 0.45, z: 0.25 },
-      { k: 'box', w: 1.8, h: 0.5, d: 0.06, x: 0, y: 0.45, z: 0.5 },
-      { k: 'cyl', r: 0.7, h: 0.12, x: 0, y: 0.78, z: 0 },
-    ] },
-    { name: 'ram', home: [2.2, 0.15, -0.5], layer: 2, count: mobile ? 900 : 2200, parts: [
-      { k: 'box', w: 0.24, h: 1.1, d: 0.14, x: -0.55, y: 0.55, z: 0 },
-      { k: 'box', w: 0.24, h: 1.1, d: 0.14, x: -0.18, y: 0.55, z: 0 },
-      { k: 'box', w: 0.24, h: 1.1, d: 0.14, x: 0.18, y: 0.55, z: 0 },
-      { k: 'box', w: 0.24, h: 1.1, d: 0.14, x: 0.55, y: 0.55, z: 0 },
-    ] },
-    { name: 'gpu', home: [0.2, 0.25, 1.2], layer: 2, count: mobile ? 1400 : 3400, parts: [
-      { k: 'box', w: 5.4, h: 0.18, d: 1.3, x: 0, y: 0, z: 0 },
-      { k: 'box', w: 0.1, h: 0.5, d: 1.3, x: -2.7, y: 0.2, z: 0 },
-      { k: 'cyl', r: 0.45, h: 0.08, x: -1.4, y: 0.13, z: 0 },
-      { k: 'cyl', r: 0.45, h: 0.08, x: 1.4, y: 0.13, z: 0 },
-    ] },
-    { name: 'storage', home: [2.9, 0.16, 1.7], layer: 2, count: mobile ? 500 : 1200, parts: [
-      { k: 'box', w: 1.6, h: 0.08, d: 0.5, x: 0, y: 0, z: 0 },
-      { k: 'box', w: 1.6, h: 0.04, d: 0.5, x: 0, y: 0.06, z: 0 },
-    ] },
-    { name: 'vrm', home: [-3.6, 0.16, 1.2], layer: 2, count: mobile ? 500 : 1200, parts: [
-      { k: 'box', w: 0.8, h: 0.5, d: 0.8, x: -0.5, y: 0.25, z: 0 },
-      { k: 'box', w: 0.8, h: 0.5, d: 0.8, x: 0.5, y: 0.25, z: 0 },
-    ] },
-    { name: 'io', home: [-4.1, 0.2, -2.2], layer: 2, count: mobile ? 500 : 1200, parts: [
-      { k: 'box', w: 1.2, h: 0.6, d: 0.8, x: 0, y: 0.3, z: 0 },
-      { k: 'box', w: 0.3, h: 0.25, d: 0.1, x: -0.35, y: 0.3, z: -0.45 },
-      { k: 'box', w: 0.3, h: 0.25, d: 0.1, x: 0.35, y: 0.3, z: -0.45 },
-    ] },
-  ];
-
-  const groups = DEFS.map((def, index) => {
-    const g = new THREE.Group();
-    g.position.set(def.home[0], def.home[1], def.home[2]);
-    g.userData.home = def.home.slice();
-    g.userData.index = index;
-    g.userData.material = solidMaterial();
-    const mat = g.userData.material;
-    def.parts.forEach((p) => {
-      let mesh;
-      if (p.k === 'cyl') {
-        mesh = new THREE.Mesh(new THREE.CylinderGeometry(p.r, p.r, p.h, 20), mat);
-      } else {
-        mesh = new THREE.Mesh(new THREE.BoxGeometry(p.w, p.h, p.d), mat);
-      }
-      mesh.position.set(p.x, p.y, p.z);
-      mesh.castShadow = !mobile;
-      mesh.receiveShadow = true;
-      mesh.renderOrder = 1;
-      g.add(mesh);
-    });
-    rig.add(g);
-    scanPoints(g, def.parts, def.count, def.layer, index, def.home);
-    return g;
-  });
-
-  /* Jalur tembaga sebagai lapisan tersendiri, bukan jaring penghubung titik. */
-  const tracePoints = [];
-  const push = (x1, z1, x2, z2) => tracePoints.push(
-    new THREE.Vector3(x1, 0.105, z1), new THREE.Vector3(x2, 0.105, z2),
-  );
-  for (let i = 0; i < 48; i += 1) {
-    const x = -4.4 + rnd() * 8.8;
-    const z = -3.1 + rnd() * 6.2;
-    const len = 0.4 + rnd() * 1.6;
-    if (rnd() > 0.5) push(x, z, Math.min(4.6, x + len), z);
-    else push(x, z, x, Math.min(3.2, z + len));
-  }
-  const traces = new THREE.LineSegments(
-    new THREE.BufferGeometry().setFromPoints(tracePoints),
-    new THREE.LineBasicMaterial({ color: col(C.rule), transparent: true, opacity: 0.55 }),
-  );
-  rig.add(traces);
-
-  /* Titik yang ditemukan: satu lapisan lagi, selalu lime. */
-  const foundDefs = groups.map((g) => ({ k: 'box', w: 0.5, h: 0.5, d: 0.5, x: 0, y: 0.3, z: 0 }));
-  const foundGroup = new THREE.Group();
-  rig.add(foundGroup);
-  const foundPos = new Float32Array(groups.length * 3);
-  const foundRgb = new Float32Array(groups.length * 3);
-  const foundLay = new Float32Array(groups.length);
-  const foundGrp = new Float32Array(groups.length);
-  groups.forEach((g, i) => {
-    const h = g.userData.home;
-    foundPos.set([h[0], h[1] + 0.3, h[2]], i * 3);
-    foundRgb.set([mid.r, mid.g, mid.b], i * 3);
-    foundLay[i] = 3;
-    foundGrp[i] = -1;
-  });
-  const foundGeo = new THREE.BufferGeometry();
-  foundGeo.setAttribute('position', new THREE.BufferAttribute(foundPos, 3));
-  foundGeo.setAttribute('aColor', new THREE.BufferAttribute(foundRgb, 3));
-  foundGeo.setAttribute('aLayer', new THREE.BufferAttribute(foundLay, 1));
-  foundGeo.setAttribute('aGroup', new THREE.BufferAttribute(foundGrp, 1));
-  const foundPts = new THREE.Points(foundGeo, scanMaterial);
-  foundPts.renderOrder = 3;
-  foundGroup.add(foundPts);
-
-  /* Jalur kamera, sapuan dan transformasi untuk tujuh tahap. */
-  const CAM = [
-    [0, 7.5, 13.5], [-3.0, 2.8, 4.8], [2.8, 2.6, 4.4], [0.6, 2.2, 5.4],
-    [4.4, 3.0, 5.2], [0, 9.5, 15.5], [0, 6.8, 12.5],
-  ];
-  const LOOK = [
-    [0, 0.2, 0], [-1.5, 0.7, -0.6], [2.2, 0.8, -0.5], [0.2, 0.5, 1.2],
-    [2.8, 0.4, 1.2], [0, 0.9, 0], [0, 0.2, 0],
-  ];
-  const RIG = [
-    [0.02, -0.18, 0], [0.02, -0.32, 0], [0.02, 0.12, 0], [0.06, -0.05, 0],
-    [0.02, 0.28, 0], [0, 0, 0], [0.02, -0.18, 0],
-  ];
-  const FOV = [38, 34, 34, 36, 34, 42, 38];
-  const SWEEP = [-1.2, 0.2, 0.5, 0.4, 0.8, 2.2, 3.2];
-  const FOUND = [-1, 1, 2, 3, 4, -1, -1];
-  const zero = () => groups.map(() => [0, 0, 0, 0, 0]);
-  const OFF = [
-    zero(),
-    (() => { const a = zero(); a[1] = [0, 0.9, 0, 0.04, -0.05]; return a; })(),
-    (() => { const a = zero(); a[2] = [0.3, 1.0, 0, -0.05, 0.06]; return a; })(),
-    (() => { const a = zero(); a[3] = [0, 0.8, 0.4, 0.06, 0]; return a; })(),
-    (() => { const a = zero(); a[4] = [0.5, 0.7, 0.3, 0, 0.05]; a[5] = [-0.4, 0.6, 0, 0, -0.05]; a[6] = [-0.2, 0.5, -0.3, 0.04, 0]; return a; })(),
-    [
-      [0, 0, 0, 0, 0], [-1.0, 2.2, -1.0, 0.08, -0.08], [1.4, 2.6, -1.2, -0.06, 0.08],
-      [0, 1.6, 2.4, 0.05, 0], [2.0, 2.0, 1.6, 0, 0.1], [-2.2, 1.8, 1.4, 0, -0.1],
-      [-1.8, 1.4, -2.2, 0.08, 0],
+  const REFERENCES = {
+    pc: [
+      { src: 'assets/references/pc-motherboard-photo.jpg', label: 'Motherboard in a case', source: 'Kurt Kaiser / Wikimedia Commons · CC0', sourceUrl: 'https://commons.wikimedia.org/wiki/File:Computer_motherboard_11.jpg' },
+      { src: 'assets/references/pc-anatomy-reference.jpg', label: 'PC anatomy study', source: 'Provided visual reference', sourceUrl: '#sources' },
     ],
-    zero(),
-  ];
-  const ALPHA = [
-    [0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12],
-    [0.35, 0.95, 0.12, 0.12, 0.12, 0.12, 0.12],
-    [0.35, 0.8, 0.95, 0.12, 0.12, 0.12, 0.12],
-    [0.4, 0.8, 0.8, 0.95, 0.12, 0.12, 0.12],
-    [0.5, 0.8, 0.8, 0.8, 0.95, 0.9, 0.85],
-    [0.92, 0.92, 0.92, 0.92, 0.92, 0.92, 0.92],
-    [0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95],
-  ];
+    cooling: [
+      { src: 'assets/references/cooling-waterblock-photo.jpg', label: 'Water block in a PC', source: 'MasterMatt / Wikimedia Commons · public domain', sourceUrl: 'https://commons.wikimedia.org/wiki/File:Watercooling_vue_carte_graphique.jpg' },
+      { src: 'assets/references/cooling-system-reference.jpg', label: 'Exploded cooling study', source: 'Provided visual reference', sourceUrl: '#sources' },
+    ],
+    keyboard: [
+      { src: 'assets/references/keyboard-keycaps-photo.jpg', label: 'Keycaps and switches', source: 'snuci / Wikimedia Commons · public domain', sourceUrl: 'https://commons.wikimedia.org/wiki/File:NeXT_ADB_key_caps_and_switches.jpg' },
+      { src: 'assets/references/power-core-reference.jpg', label: 'Exploded mechanism study', source: 'Provided visual reference', sourceUrl: '#sources' },
+    ],
+  };
 
-  function key(i) {
-    const k = {
-      duration: 1, ease: 'none',
-      camX: CAM[i][0], camY: CAM[i][1], camZ: CAM[i][2],
-      lookX: LOOK[i][0], lookY: LOOK[i][1], lookZ: LOOK[i][2],
-      rigX: RIG[i][0], rigY: RIG[i][1], rigZ: RIG[i][2],
-      fov: FOV[i], sweep: SWEEP[i], found: FOUND[i],
+  const source = (label, url) => ({ label, url });
+
+  /* This is the content contract. UI cards, component labels and animation states read the same records. */
+  const HARDWARE = {
+    pc: {
+      key: 'pc',
+      name: 'PC anatomy',
+      overview: {
+        label: 'System overview',
+        description: 'A desktop computer is a chain of specialised jobs. The motherboard routes signals, the processor transforms data, memory keeps active work close, and power and cooling make the whole loop possible.',
+        primaryFunction: 'Connect the system into one working machine.',
+        howItWorks: 'Signals and power move through shared buses, sockets and connectors. No single part is the computer by itself.',
+      },
+      references: REFERENCES.pc,
+      view: {
+        overview: { position: [6.8, 5.1, 10.8], target: [0, 0.65, 0.45], rotation: [0.08, -0.24, 0] },
+        final: { position: [7.8, 7.4, 12.4], target: [0, 0.7, 0.4], rotation: [0.04, -0.16, 0] },
+      },
+      components: [
+        {
+          componentId: 'motherboard', componentName: 'Motherboard', shortName: 'Motherboard',
+          description: 'The main circuit board. It gives every other component a physical and electrical place to connect.',
+          primaryFunction: 'Route power, data and timing between components.',
+          howItWorks: 'Copper traces, sockets and controller hubs form a network. The chipset and buses coordinate traffic between the CPU, memory, storage and expansion slots.',
+          relatedComponents: ['CPU', 'RAM', 'GPU', 'Storage'], meshNodeName: 'PC_Motherboard',
+          cameraFocus: { position: [5.1, 3.2, 7.1], target: [0, 0.15, 0.2] },
+          animationSequence: 'The board remains as the reference plane while the connected modules lift from their sockets.',
+          focusOffset: [0, -0.08, 0], explodedOffset: [0, -0.12, 0],
+          technicalSources: [source('Intel / motherboard overview', 'https://www.intel.com/content/www/us/en/gaming/resources/motherboard.html')],
+        },
+        {
+          componentId: 'cpu', componentName: 'CPU', shortName: 'Processor',
+          description: 'The central processing unit executes instructions and coordinates the work that software asks the computer to do.',
+          primaryFunction: 'Decode and execute instructions.',
+          howItWorks: 'Control logic moves data through arithmetic and logic units. Caches keep frequently used data near the cores so the processor spends less time waiting on memory.',
+          relatedComponents: ['Motherboard', 'RAM', 'Cooling'], meshNodeName: 'PC_CPU_Socket',
+          cameraFocus: { position: [-2.9, 2.8, 4.5], target: [-0.95, 0.62, -0.45] },
+          animationSequence: 'The cooler rises, exposing the heat spreader and the socket contact field underneath.',
+          focusOffset: [-0.1, 0.76, -0.05], explodedOffset: [-0.85, 1.35, -0.45],
+          technicalSources: [source('Intel / CPU fundamentals', 'https://www.intel.com/content/www/us/en/gaming/resources/cpu.html')],
+        },
+        {
+          componentId: 'ram', componentName: 'Memory', shortName: 'RAM',
+          description: 'Random access memory is the system’s short-term workspace for programs and data that are currently in use.',
+          primaryFunction: 'Hold active data close to the processor.',
+          howItWorks: 'DRAM stores each bit as electrical charge in a cell. The memory controller repeatedly refreshes those cells and transfers blocks over the memory bus.',
+          relatedComponents: ['CPU', 'Motherboard', 'Storage'], meshNodeName: 'PC_DIMM_Memory',
+          cameraFocus: { position: [3.6, 2.6, 4.7], target: [1.25, 0.78, -0.22] },
+          animationSequence: 'The memory sticks rise from their DIMM slots so their edge connector and chips can be read as one layer.',
+          focusOffset: [0.22, 0.72, -0.05], explodedOffset: [1.6, 1.55, -0.6],
+          technicalSources: [source('Micron / what is DRAM?', 'https://www.micron.com/about/micron-glossary/what-is-dram')],
+        },
+        {
+          componentId: 'gpu', componentName: 'Graphics processor', shortName: 'GPU',
+          description: 'The graphics processing unit performs many parallel calculations for images, video, simulation and other workloads.',
+          primaryFunction: 'Process large batches of visual or parallel data.',
+          howItWorks: 'Thousands of smaller arithmetic units work on many data elements at once. The card also carries its own memory and power delivery.',
+          relatedComponents: ['CPU', 'PCIe slot', 'Power supply'], meshNodeName: 'PC_Graphics_Card',
+          cameraFocus: { position: [1.3, 2.5, 5.8], target: [0.15, 0.72, 1.15] },
+          animationSequence: 'The long expansion card slides out of its PCIe slot; its fans remain visible as the cooling layer.',
+          focusOffset: [0, 0.76, 0.34], explodedOffset: [0.1, 1.75, 1.35],
+          technicalSources: [source('NVIDIA / GPU basics', 'https://www.nvidia.com/en-us/geforce/graphics-cards/graphics-cards/'), source('PCI-SIG / PCIe', 'https://pcisig.com/specifications/pciexpress')],
+        },
+        {
+          componentId: 'storage', componentName: 'NVMe storage', shortName: 'Storage',
+          description: 'The solid-state drive keeps the operating system, applications and files when the machine is turned off.',
+          primaryFunction: 'Provide persistent, fast data storage.',
+          howItWorks: 'NAND flash stores charge in memory cells. The controller translates logical addresses, manages wear and moves data over the PCIe bus using NVMe commands.',
+          relatedComponents: ['Motherboard', 'RAM', 'Power supply'], meshNodeName: 'PC_NVMe_Drive',
+          cameraFocus: { position: [4.4, 2.2, 5.3], target: [2.45, 0.58, 1.7] },
+          animationSequence: 'The slim drive lifts from its M.2 stand-off to reveal the controller and flash packages.',
+          focusOffset: [0.45, 0.64, 0.18], explodedOffset: [2.65, 1.45, 1.55],
+          technicalSources: [source('Kingston / what is NVMe?', 'https://www.kingston.com/en/blog/personal-storage/what-is-nvme')],
+        },
+        {
+          componentId: 'psu', componentName: 'Power supply', shortName: 'PSU',
+          description: 'The power supply converts wall power into the regulated low-voltage rails used by the board, processor, drives and graphics card.',
+          primaryFunction: 'Deliver stable electrical power.',
+          howItWorks: 'Switching electronics rectify and transform incoming AC, then filter and regulate several DC outputs. Protection circuits respond to overloads and faults.',
+          relatedComponents: ['Motherboard', 'GPU', 'Cooling'], meshNodeName: 'PC_Power_Supply',
+          cameraFocus: { position: [4.7, 3.3, 6.2], target: [2.35, 0.72, 1.75] },
+          animationSequence: 'The PSU moves away from the board, leaving its intake fan and modular connector face readable.',
+          focusOffset: [0.38, 0.62, 0.28], explodedOffset: [2.45, 0.95, 2.15],
+          technicalSources: [source('Intel / desktop power supply guide', 'https://www.intel.com/content/www/us/en/gaming/resources/power-supply.html')],
+        },
+        {
+          componentId: 'cooling', componentName: 'Cooling system', shortName: 'Cooling',
+          description: 'The heatsink, fan and airflow path move heat away from the CPU so its silicon can keep operating within its thermal limits.',
+          primaryFunction: 'Transfer and reject heat.',
+          howItWorks: 'Thermal interface material bridges microscopic gaps. A metal heatsink spreads the heat, while fins and airflow move it into the surrounding air.',
+          relatedComponents: ['CPU', 'Case', 'Power supply'], meshNodeName: 'PC_CPU_Cooler',
+          cameraFocus: { position: [-2.7, 3.7, 5.1], target: [-0.72, 1.18, -0.38] },
+          animationSequence: 'The fan tower rises above the CPU to show the fin stack, fan hub and airflow direction.',
+          focusOffset: [-0.35, 0.98, -0.3], explodedOffset: [-1.3, 2.35, -0.6],
+          technicalSources: [source('Noctua / CPU cooler principles', 'https://noctua.at/en/which-cpu-cooler-is-right-for-me')],
+        },
+        {
+          componentId: 'case', componentName: 'Case and airflow', shortName: 'Enclosure',
+          description: 'The case gives the system structure, protects the components and guides air from intake fans to exhaust fans.',
+          primaryFunction: 'Support, protect and ventilate the assembly.',
+          howItWorks: 'Panels, mounts and fan positions control the physical layout and pressure path. The enclosure is part of the thermal design, not just a shell.',
+          relatedComponents: ['Cooling', 'Motherboard', 'Power supply'], meshNodeName: 'PC_Case_Frame',
+          cameraFocus: { position: [6.4, 4.3, 9.7], target: [0, 0.72, 0.45] },
+          animationSequence: 'The outer frame drifts back to expose the inner arrangement before the final assembly returns.',
+          focusOffset: [0, 0.25, 0], explodedOffset: [0, 2.5, -1.1],
+          technicalSources: [source('Intel / PC cooling basics', 'https://www.intel.com/content/www/us/en/gaming/resources/cpu-cooler.html')],
+        },
+      ],
+    },
+    cooling: {
+      key: 'cooling',
+      name: 'Cooling loop',
+      overview: {
+        label: 'Thermal overview',
+        description: 'An all-in-one liquid cooler moves heat through a closed loop. The pump pushes coolant across the cold plate, through tubes, and into a radiator where fans release the heat.',
+        primaryFunction: 'Move heat away from a hot processor and into air.',
+        howItWorks: 'Conduction, fluid circulation and convection happen in sequence. Each layer has a different job, but the temperature path is one continuous loop.',
+      },
+      references: REFERENCES.cooling,
+      view: {
+        overview: { position: [5.8, 4.7, 8.6], target: [0.2, 0.65, 0], rotation: [0.08, -0.32, 0] },
+        final: { position: [6.4, 6.4, 10.2], target: [0.2, 0.65, 0], rotation: [0.02, -0.22, 0] },
+      },
+      components: [
+        {
+          componentId: 'cold-plate', componentName: 'Cold plate', shortName: 'Cold plate',
+          description: 'The cold plate is the metal contact surface that sits against the processor and receives heat from it.',
+          primaryFunction: 'Conduct heat from the CPU into the coolant path.',
+          howItWorks: 'A thin copper or nickel-plated base spreads heat across microchannels. Thermal compound fills tiny air gaps between the processor and plate.',
+          relatedComponents: ['Pump', 'Thermal interface', 'CPU'], meshNodeName: 'Cooling_Cold_Plate',
+          cameraFocus: { position: [3.4, 2.4, 4.6], target: [-1.35, 0.1, 0] },
+          animationSequence: 'The base turns slightly downward and lifts from the pump body so the contact face can be read.',
+          focusOffset: [-0.1, 0.5, 0], explodedOffset: [-1.7, 1.15, 0.2],
+          technicalSources: [source('Corsair / liquid cooling', 'https://www.corsair.com/us/en/explorer/diy-builder/cpu-coolers/what-is-liquid-cooling/')],
+        },
+        {
+          componentId: 'pump', componentName: 'Pump and impeller', shortName: 'Pump',
+          description: 'The pump keeps coolant moving. Its impeller turns electrical energy into a pressure difference inside the loop.',
+          primaryFunction: 'Circulate coolant continuously.',
+          howItWorks: 'A motor spins an impeller inside the pump chamber. The rotating blades pull fluid in and push it toward the outlet without opening the sealed loop.',
+          relatedComponents: ['Cold plate', 'Coolant tubes', 'Radiator'], meshNodeName: 'Cooling_Pump_Housing',
+          cameraFocus: { position: [2.8, 2.8, 4.5], target: [0, 0.64, 0] },
+          animationSequence: 'The top housing rises and the impeller disk turns a fraction to make the flow source visible.',
+          focusOffset: [0, 0.65, 0], explodedOffset: [0, 1.4, 0],
+          technicalSources: [source('Asetek / liquid cooling explained', 'https://www.asetek.com/gaming/technology/')],
+        },
+        {
+          componentId: 'coolant', componentName: 'Coolant path', shortName: 'Coolant path',
+          description: 'The sealed fluid path carries thermal energy from the cold plate to the radiator and back again.',
+          primaryFunction: 'Transport heat through the loop.',
+          howItWorks: 'A water-based mixture absorbs heat at the plate, travels through flexible tubing, releases heat in the radiator, and returns cooler to the pump.',
+          relatedComponents: ['Pump', 'Radiator', 'Cold plate'], meshNodeName: 'Cooling_Coolant_Tubes',
+          cameraFocus: { position: [4.1, 3.1, 5.8], target: [1.0, 0.75, 0] },
+          animationSequence: 'The tubes brighten and lift from the housing, turning the hidden flow path into the highlighted route.',
+          focusOffset: [0.25, 0.65, 0.1], explodedOffset: [1.1, 1.8, 0.1],
+          technicalSources: [source('Intel / thermal design power', 'https://www.intel.com/content/www/us/en/support/articles/000055611/processors.html')],
+        },
+        {
+          componentId: 'radiator', componentName: 'Radiator', shortName: 'Radiator',
+          description: 'The radiator is a finned heat exchanger. It spreads the coolant’s heat across a large metal surface.',
+          primaryFunction: 'Increase the surface area available to reject heat.',
+          howItWorks: 'Thin fins conduct heat from internal channels. Air passing through the fin stack carries that heat away from the metal.',
+          relatedComponents: ['Fans', 'Coolant path', 'Case'], meshNodeName: 'Cooling_Radiator_Core',
+          cameraFocus: { position: [4.9, 3.4, 6.8], target: [2.55, 0.7, 0] },
+          animationSequence: 'The radiator slides out from the fan plane so its channels, fins and end tank read as separate layers.',
+          focusOffset: [0.55, 0.65, 0], explodedOffset: [2.25, 1.15, 0.25],
+          technicalSources: [source('Alphacool / radiator basics', 'https://www.alphacool.com/en/radiators')],
+        },
+        {
+          componentId: 'fans', componentName: 'Radiator fans', shortName: 'Fans',
+          description: 'The fans push air through the radiator fins. Their speed is controlled according to temperature and the cooling profile.',
+          primaryFunction: 'Move air across the heat exchanger.',
+          howItWorks: 'Rotating blades create a pressure difference that drives airflow. More airflow can move more heat, but increases power use and noise.',
+          relatedComponents: ['Radiator', 'Case', 'Power supply'], meshNodeName: 'Cooling_Radiator_Fans',
+          cameraFocus: { position: [4.5, 2.9, 5.7], target: [2.4, 0.75, 0.15] },
+          animationSequence: 'The fan discs separate from the radiator and pivot slightly to reveal the blade pitch and motor hubs.',
+          focusOffset: [0.42, 0.9, 0.18], explodedOffset: [2.4, 1.9, 0.7],
+          technicalSources: [source('Noctua / fan terminology', 'https://noctua.at/en/products/fan')],
+        },
+        {
+          componentId: 'mount', componentName: 'Mount and interface', shortName: 'Mount',
+          description: 'The mounting hardware keeps the block flat against the processor with the right amount of contact pressure.',
+          primaryFunction: 'Hold the thermal interface in a stable, even contact.',
+          howItWorks: 'A bracket distributes force around the socket. Screws and a backplate prevent the cooler from shifting while the board flexes under load.',
+          relatedComponents: ['Cold plate', 'Thermal interface', 'Motherboard'], meshNodeName: 'Cooling_Mounting_Hardware',
+          cameraFocus: { position: [3.6, 2.6, 5.0], target: [-0.5, 0.16, 0] },
+          animationSequence: 'The screws and mounting ring spread from the plate to show how the force path closes the contact stack.',
+          focusOffset: [-0.4, 0.48, 0], explodedOffset: [-0.4, -0.2, 1.25],
+          technicalSources: [source('AMD / socket installation guide', 'https://www.amd.com/en/resources/support-articles/faqs/CPU-7.html')],
+        },
+      ],
+    },
+    keyboard: {
+      key: 'keyboard',
+      name: 'Mechanical keyboard',
+      overview: {
+        label: 'Input overview',
+        description: 'A mechanical key is a stack of physical layers. Your finger moves a cap, the switch moves a stem, metal contacts close a circuit, and the controller reports a position to the computer.',
+        primaryFunction: 'Turn a physical press into a digital input event.',
+        howItWorks: 'The keyboard scans a matrix of rows and columns. When a switch closes, the controller identifies the intersection and sends a coded report over USB.',
+      },
+      references: REFERENCES.keyboard,
+      view: {
+        overview: { position: [6.1, 5.2, 9.2], target: [0, 0.4, 0], rotation: [0.18, -0.28, 0] },
+        final: { position: [7.1, 7.2, 11.1], target: [0, 0.4, 0], rotation: [0.14, -0.2, 0] },
+      },
+      components: [
+        {
+          componentId: 'case', componentName: 'Keyboard case', shortName: 'Case',
+          description: 'The case gives the keyboard its shape and stiffness. It supports the plate, PCB and electronics beneath the keys.',
+          primaryFunction: 'Protect and support the key mechanism.',
+          howItWorks: 'The top and bottom shells distribute typing force and hold the internal stack in alignment. Feet change the typing angle.',
+          relatedComponents: ['Plate', 'PCB', 'Gaskets'], meshNodeName: 'Keyboard_Case',
+          cameraFocus: { position: [5.4, 3.1, 7.3], target: [0, 0.05, 0] },
+          animationSequence: 'The outer shell drops away from the stack, exposing the mounting points and internal cavity.',
+          focusOffset: [0, -0.1, 0], explodedOffset: [0, -1.0, 0],
+          technicalSources: [source('QMK / keyboard hardware', 'https://docs.qmk.fm/feature_matrix')],
+        },
+        {
+          componentId: 'plate', componentName: 'Switch plate', shortName: 'Plate',
+          description: 'The plate is the rigid sheet that holds each switch in a precise grid and gives a press its structural feel.',
+          primaryFunction: 'Position switches and control flex.',
+          howItWorks: 'Cut-outs capture the switch housings. The plate may be metal, polycarbonate or another material, changing stiffness and sound.',
+          relatedComponents: ['Switches', 'Keycaps', 'PCB'], meshNodeName: 'Keyboard_Switch_Plate',
+          cameraFocus: { position: [4.0, 2.7, 5.2], target: [0, 0.45, 0] },
+          animationSequence: 'The plate rises above the PCB while a small group of switches stays seated in its cut-outs.',
+          focusOffset: [0, 0.62, 0], explodedOffset: [0, 0.95, 0],
+          technicalSources: [source('Keyboard University / plates', 'https://www.keyboard.university/100-courses/keyboard-parts-101-4x9cs')],
+        },
+        {
+          componentId: 'switches', componentName: 'Mechanical switches', shortName: 'Switches',
+          description: 'The switch is the moving mechanism under each key. Its spring controls return force and its contacts register the press.',
+          primaryFunction: 'Convert travel into a repeatable electrical closure.',
+          howItWorks: 'A stem slides inside the housing, compressing a spring. Near the bottom of the travel, two metal leaves meet and change the matrix signal.',
+          relatedComponents: ['Keycaps', 'Plate', 'PCB'], meshNodeName: 'Keyboard_Mechanical_Switches',
+          cameraFocus: { position: [2.3, 2.0, 3.8], target: [0.1, 0.85, 0.15] },
+          animationSequence: 'A few switch bodies rise out of the plate; one stem extends to make the travel path legible.',
+          focusOffset: [0.15, 0.88, 0.15], explodedOffset: [0.25, 1.55, 0.3],
+          technicalSources: [source('CHERRY / MX switches', 'https://www.cherry.de/en-us/products/mx-switches')],
+        },
+        {
+          componentId: 'keycaps', componentName: 'Keycaps', shortName: 'Keycaps',
+          description: 'Keycaps are the touch surface and visual map of the keyboard. Their stem connects the cap to the switch.',
+          primaryFunction: 'Transfer a finger’s force to the switch stem.',
+          howItWorks: 'The cap’s cross-shaped mount fits over the stem. Shape, height and material change finger position, sound and the tactile surface.',
+          relatedComponents: ['Switches', 'Stabilizers', 'Plate'], meshNodeName: 'Keyboard_Keycaps',
+          cameraFocus: { position: [3.2, 3.1, 4.8], target: [0.15, 1.08, 0.05] },
+          animationSequence: 'The keycap field lifts as a single layer, leaving the switch stems visible below.',
+          focusOffset: [0, 1.05, 0], explodedOffset: [0.8, 2.15, -0.2],
+          technicalSources: [source('Keychron / keycap guide', 'https://www.keychron.com/blogs/news/keycap-profile')],
+        },
+        {
+          componentId: 'pcb', componentName: 'PCB and matrix', shortName: 'PCB',
+          description: 'The printed circuit board carries the switch contacts, row and column traces, diodes, and the controller connection.',
+          primaryFunction: 'Sense switch closures and route the signals.',
+          howItWorks: 'A scan cycle drives one matrix line at a time and reads the others. Diodes reduce ghosting so multiple keys can be identified reliably.',
+          relatedComponents: ['Switches', 'Controller', 'USB'], meshNodeName: 'Keyboard_PCB_Matrix',
+          cameraFocus: { position: [3.8, 1.8, 5.5], target: [0, 0.18, 0] },
+          animationSequence: 'The PCB lowers out of the stack and its copper-like scan traces brighten as a network.',
+          focusOffset: [0, -0.18, 0], explodedOffset: [-0.45, -0.25, 0.7],
+          technicalSources: [source('QMK / matrix scanning', 'https://docs.qmk.fm/how_a_matrix_works')],
+        },
+        {
+          componentId: 'stabilizers', componentName: 'Stabilizers', shortName: 'Stabilizers',
+          description: 'Stabilizers keep wide keys such as Space and Enter level, so both ends travel together instead of twisting.',
+          primaryFunction: 'Balance long keycaps across their width.',
+          howItWorks: 'A central mount is linked to outer housings by a wire or bar. Pressing one side transfers motion to the other side.',
+          relatedComponents: ['Keycaps', 'Plate', 'Switches'], meshNodeName: 'Keyboard_Stabilizers',
+          cameraFocus: { position: [4.2, 2.1, 5.2], target: [0, 0.55, 0.78] },
+          animationSequence: 'The stabilizer wire pivots forward from the plate, exposing the two outer housings and central stem.',
+          focusOffset: [0, 0.72, 0.72], explodedOffset: [-1.7, 1.35, 0.75],
+          technicalSources: [source('Keyboard University / stabilizers', 'https://www.keyboard.university/100-courses/keyboard-parts-101-4x9cs')],
+        },
+        {
+          componentId: 'controller', componentName: 'Controller and USB', shortName: 'Controller',
+          description: 'The controller is the small computer on the board. It scans the matrix and sends the resulting key codes to the host.',
+          primaryFunction: 'Translate switch states into USB input reports.',
+          howItWorks: 'Firmware maps each row-column intersection to a key. The USB interface packages the result into reports that the operating system understands.',
+          relatedComponents: ['PCB', 'Switches', 'Computer'], meshNodeName: 'Keyboard_Controller_USB',
+          cameraFocus: { position: [4.8, 2.8, 6.5], target: [2.5, 0.32, 0.15] },
+          animationSequence: 'The controller board slides from the rear edge and the USB port turns toward the viewer.',
+          focusOffset: [0.5, 0.65, 0], explodedOffset: [2.45, 1.2, -0.1],
+          technicalSources: [source('USB-IF / documents', 'https://www.usb.org/documents')],
+        },
+      ],
+    },
+  };
+
+  Object.values(HARDWARE).forEach((device) => {
+    device.components.forEach((component) => { component.referenceImages = device.references; });
+  });
+  window.ASSEMBLY_HARDWARE_DATA = HARDWARE;
+
+  const escapeHTML = (value) => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const vec = (arr) => new THREE.Vector3(arr[0], arr[1], arr[2]);
+
+  function makeMaterial(color, options = {}) {
+    const material = new THREE.MeshStandardMaterial({
+      color,
+      roughness: options.roughness ?? 0.58,
+      metalness: options.metalness ?? 0.18,
+      transparent: options.transparent ?? false,
+      opacity: options.opacity ?? 1,
+      emissive: options.emissive ?? 0x000000,
+      emissiveIntensity: options.emissiveIntensity ?? 0,
+    });
+    material.userData.baseOpacity = options.opacity ?? 1;
+    material.userData.baseColor = color;
+    material.userData.baseEmissive = options.emissive ?? 0x000000;
+    return material;
+  }
+
+  function registerMesh(group, mesh, componentId, edgeColor = null) {
+    mesh.userData.componentId = componentId;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    group.userData.meshes.push(mesh);
+    group.add(mesh);
+    if (edgeColor) {
+      const edge = new THREE.LineSegments(
+        new THREE.EdgesGeometry(mesh.geometry),
+        new THREE.LineBasicMaterial({ color: edgeColor, transparent: true, opacity: 0.28 }),
+      );
+      edge.position.copy(mesh.position);
+      edge.rotation.copy(mesh.rotation);
+      edge.scale.copy(mesh.scale);
+      edge.userData.isEdge = true;
+      group.add(edge);
+    }
+    return mesh;
+  }
+
+  function componentGroup(component, index) {
+    const group = new THREE.Group();
+    group.name = component.meshNodeName;
+    group.userData = {
+      componentId: component.componentId,
+      componentIndex: index,
+      home: new THREE.Vector3(),
+      focusOffset: vec(component.focusOffset || [0, 0.6, 0]),
+      explodedOffset: vec(component.explodedOffset || [0, 1, 0]),
+      meshes: [],
     };
-    OFF[i].forEach((o, j) => {
-      k['o' + j + 'x'] = o[0]; k['o' + j + 'y'] = o[1]; k['o' + j + 'z'] = o[2];
-      k['o' + j + 'rx'] = o[3]; k['o' + j + 'rz'] = o[4];
-    });
-    ALPHA[i].forEach((a, j) => { k['a' + j] = a; });
-    return k;
-  }
-  const S = {};
-  const k0 = key(0);
-  Object.keys(k0).forEach((p) => { if (p !== 'duration' && p !== 'ease') S[p] = k0[p]; });
-
-  function apply(s) {
-    camera.position.set(s.camX, s.camY, s.camZ);
-    camera.fov = s.fov;
-    camera.updateProjectionMatrix();
-    camera.lookAt(s.lookX, s.lookY, s.lookZ);
-    rig.rotation.set(s.rigX, s.rigY, s.rigZ);
-    uniforms.uSweepY.value = s.sweep;
-    uniforms.uFoundGroup.value = s.found;
-    groups.forEach((g, j) => {
-      const h = g.userData.home;
-      g.position.set(h[0] + s['o' + j + 'x'], h[1] + s['o' + j + 'y'], h[2] + s['o' + j + 'z']);
-      g.rotation.set(s['o' + j + 'rx'], 0, s['o' + j + 'rz']);
-      g.userData.material.opacity = s['a' + j];
-    });
+    return group;
   }
 
-  const focusGroup = [groups[0], groups[1], groups[2], groups[3], groups[4], groups[0], groups[0]];
-  const projected = new THREE.Vector3();
-  let needsRender = true;
-  let tl;
-
-  function paintUI(idx, progress) {
-    hudTahap.textContent = LABELS[idx];
-    hudNo.textContent = String(idx).padStart(2, '0') + ' / 06';
-    hudPersen.textContent = Math.round(progress * 100) + '%';
-    rail.style.transform = 'scaleY(' + progress + ')';
-    steps.forEach((el, i) => el.classList.toggle('is-active', i === idx));
-    stageButtons.forEach((el, i) => el.classList.toggle('is-active', i === idx));
-    announce.textContent = 'Tahap ' + (idx + 1) + ' dari 7, ' + LABELS[idx];
-
-    focusGroup[idx].getWorldPosition(projected);
-    projected.project(camera);
-    const rect = canvas.getBoundingClientRect();
-    const x = rect.left + (projected.x * 0.5 + 0.5) * rect.width;
-    const y = rect.top + (-projected.y * 0.5 + 0.5) * rect.height;
-    root.style.setProperty('--cx', Math.max(0, Math.min(window.innerWidth - 200, x)) + 'px');
-    root.style.setProperty('--cy', Math.max(80, Math.min(window.innerHeight - 80, y)) + 'px');
-    calloutLabel.textContent = CALLOUT_LABELS[idx];
-    calloutFig.textContent = String(idx + 1).padStart(2, '0') + ' / 07';
+  function addBox(group, componentId, size, position, options = {}) {
+    const material = options.material || makeMaterial(options.color ?? COLORS.graphite, options);
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(size[0], size[1], size[2]), material);
+    mesh.position.set(position[0], position[1], position[2]);
+    if (options.rotation) mesh.rotation.set(options.rotation[0], options.rotation[1], options.rotation[2]);
+    return registerMesh(group, mesh, componentId, options.edgeColor ?? null);
   }
 
-  function sync() {
-    const p = tl ? tl.progress() : 0;
-    const idx = Math.min(6, Math.round(p * 6));
-    apply(S);
-    paintUI(idx, p);
-    needsRender = true;
+  function addCylinder(group, componentId, radius, height, position, options = {}) {
+    const material = options.material || makeMaterial(options.color ?? COLORS.steel, options);
+    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, height, options.segments ?? 32), material);
+    mesh.position.set(position[0], position[1], position[2]);
+    if (options.rotation) mesh.rotation.set(options.rotation[0], options.rotation[1], options.rotation[2]);
+    return registerMesh(group, mesh, componentId, options.edgeColor ?? null);
   }
 
-  function bindLayers() {
-    document.querySelectorAll('[data-layer]').forEach((input) => {
-      const u = uniforms['uLayer' + input.dataset.layer];
-      if (!u) return;
-      u.value = input.checked ? 1 : 0;
-      input.addEventListener('change', () => {
-        u.value = input.checked ? 1 : 0;
-        needsRender = true;
+  function addTorus(group, componentId, radius, tube, position, options = {}) {
+    const material = options.material || makeMaterial(options.color ?? COLORS.steel, options);
+    const mesh = new THREE.Mesh(new THREE.TorusGeometry(radius, tube, 12, 40), material);
+    mesh.position.set(position[0], position[1], position[2]);
+    if (options.rotation) mesh.rotation.set(options.rotation[0], options.rotation[1], options.rotation[2]);
+    return registerMesh(group, mesh, componentId, options.edgeColor ?? null);
+  }
+
+  function addTube(group, componentId, points, radius, options = {}) {
+    const material = options.material || makeMaterial(options.color ?? COLORS.blue, options);
+    const curve = new THREE.CatmullRomCurve3(points.map((point) => vec(point)));
+    const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 32, radius, 10, false), material);
+    return registerMesh(group, mesh, componentId, null);
+  }
+
+  function addTexturedFan(group, componentId, center, radius, color = COLORS.graphiteDark) {
+    addCylinder(group, componentId, radius, 0.12, center, { color, metalness: .55, roughness: .4 });
+    for (let i = 0; i < 7; i += 1) {
+      const angle = (Math.PI * 2 * i) / 7;
+      addBox(group, componentId, [radius * .92, .07, .17], [center[0] + Math.cos(angle) * radius * .45, center[1] + .08, center[2] + Math.sin(angle) * radius * .45], {
+        color: COLORS.steel, metalness: .5, roughness: .42, rotation: [0, -angle, angle * .18],
       });
-    });
+    }
+    addCylinder(group, componentId, radius * .18, .17, [center[0], center[1] + .1, center[2]], { color: COLORS.orange, metalness: .7, roughness: .32 });
   }
 
-  function bindStages() {
-    stageButtons.forEach((btn, i) => {
-      btn.addEventListener('click', () => {
-        if (reduced || !tl || !tl.scrollTrigger) {
-          const el = document.getElementById('tahap-' + i);
-          if (el) el.scrollIntoView({ behavior: 'auto', block: 'start' });
+  function buildPC(data) {
+    const rig = new THREE.Group();
+    rig.name = 'PC_Assembly';
+    const groups = [];
+    const add = (component, build) => {
+      const index = data.components.indexOf(component);
+      const group = componentGroup(component, index);
+      build(group, component.componentId);
+      rig.add(group);
+      groups.push(group);
+      return group;
+    };
+    const c = Object.fromEntries(data.components.map((component) => [component.componentId, component]));
+
+    add(c.motherboard, (g, id) => {
+      addBox(g, id, [7.8, .18, 5.2], [0, 0, 0], { color: COLORS.board, metalness: .2, roughness: .72, edgeColor: COLORS.boardEdge });
+      addBox(g, id, [1.65, .1, 1.7], [-.9, .16, -.42], { color: COLORS.graphiteDark, metalness: .5, roughness: .43, edgeColor: COLORS.steel });
+      for (let row = 0; row < 4; row += 1) addBox(g, id, [.16, .06, 1.65], [1.55 + row * .34, .16, -.35], { color: COLORS.graphiteDark, metalness: .3, roughness: .52 });
+      for (let row = 0; row < 3; row += 1) addBox(g, id, [4.6, .055, .055], [-.05, .15, -1.65 + row * .23], { color: COLORS.copper, metalness: .7, roughness: .37 });
+      for (let row = 0; row < 4; row += 1) addBox(g, id, [2.2, .055, .055], [-1.0 + row * .1, .15, 1.25 + row * .25], { color: COLORS.copper, metalness: .7, roughness: .37 });
+      addBox(g, id, [1.1, .45, .75], [-3.1, .3, -1.8], { color: COLORS.graphite, metalness: .44, roughness: .46 });
+      addBox(g, id, [.22, .45, 1.7], [-3.7, .3, -.5], { color: COLORS.steel, metalness: .55, roughness: .4 });
+      addBox(g, id, [3.3, .08, .12], [.0, .2, 2.1], { color: COLORS.blueDeep, metalness: .32, roughness: .5 });
+    });
+
+    add(c.cpu, (g, id) => {
+      addBox(g, id, [1.78, .12, 1.72], [0, 0, 0], { color: COLORS.graphiteDark, metalness: .5, roughness: .36, edgeColor: COLORS.steel });
+      addBox(g, id, [1.28, .1, 1.23], [0, .13, 0], { color: COLORS.steelLight, metalness: .72, roughness: .3 });
+      addBox(g, id, [1.02, .04, .97], [0, .2, 0], { color: COLORS.blueDeep, metalness: .38, roughness: .36 });
+      for (let i = 0; i < 4; i += 1) addBox(g, id, [1.55, .06, .06], [0, .27 + i * .1, -.5 + i * .3], { color: COLORS.steel, metalness: .68, roughness: .35 });
+    });
+
+    add(c.ram, (g, id) => {
+      for (let i = 0; i < 4; i += 1) {
+        const x = i * .38 - .57;
+        addBox(g, id, [.24, 1.3, .14], [x, .64, 0], { color: i % 2 ? COLORS.blue : COLORS.blueDeep, metalness: .38, roughness: .43, edgeColor: COLORS.steel });
+        for (let chip = 0; chip < 4; chip += 1) addBox(g, id, [.12, .14, .04], [x, .43 + chip * .24, -.085], { color: COLORS.graphiteDark, metalness: .55, roughness: .35 });
+        addBox(g, id, [.2, .04, .03], [x, .035, 0], { color: COLORS.copper, metalness: .8, roughness: .26 });
+      }
+    });
+
+    add(c.gpu, (g, id) => {
+      addBox(g, id, [5.15, .38, 1.28], [0, 0, 0], { color: COLORS.graphite, metalness: .58, roughness: .35, edgeColor: COLORS.steel });
+      addBox(g, id, [5.0, .1, .08], [0, .23, -.54], { color: COLORS.steel, metalness: .7, roughness: .34 });
+      addTexturedFan(g, id, [-1.35, .28, 0], .43);
+      addTexturedFan(g, id, [1.35, .28, 0], .43);
+      addBox(g, id, [.08, .56, 1.18], [-2.62, .16, 0], { color: COLORS.steelLight, metalness: .65, roughness: .3 });
+      addBox(g, id, [.45, .5, .07], [2.23, .18, .55], { color: COLORS.orange, metalness: .5, roughness: .36 });
+    });
+
+    add(c.storage, (g, id) => {
+      addBox(g, id, [1.8, .08, .58], [0, 0, 0], { color: COLORS.graphiteDark, metalness: .55, roughness: .37, edgeColor: COLORS.steel });
+      addBox(g, id, [.34, .07, .35], [-.48, .08, 0], { color: COLORS.blue, metalness: .35, roughness: .42 });
+      addBox(g, id, [.47, .07, .35], [.12, .08, 0], { color: COLORS.steel, metalness: .7, roughness: .35 });
+      addBox(g, id, [.25, .07, .35], [.6, .08, 0], { color: COLORS.blueDeep, metalness: .45, roughness: .38 });
+    });
+
+    add(c.psu, (g, id) => {
+      addBox(g, id, [2.25, 1.25, 1.8], [0, 0, 0], { color: COLORS.graphiteDark, metalness: .6, roughness: .4, edgeColor: COLORS.steel });
+      addTexturedFan(g, id, [0, .66, 0], .56);
+      addBox(g, id, [.05, .5, .5], [1.12, .22, -.42], { color: COLORS.blue, metalness: .55, roughness: .3 });
+      addBox(g, id, [.05, .5, .5], [1.12, .22, .18], { color: COLORS.blue, metalness: .55, roughness: .3 });
+    });
+
+    add(c.cooling, (g, id) => {
+      for (let i = 0; i < 7; i += 1) addBox(g, id, [1.55, .12, .12], [0, .18 + i * .14, -.6 + i * .01], { color: COLORS.steel, metalness: .68, roughness: .4 });
+      addTexturedFan(g, id, [0, .7, .02], .66);
+      addBox(g, id, [1.7, .08, 1.6], [0, .1, 0], { color: COLORS.graphiteDark, metalness: .5, roughness: .45 });
+    });
+
+    add(c.case, (g, id) => {
+      const rails = [
+        [[-4.2, .3, -2.9], [4.2, .3, -2.9]], [[-4.2, .3, 2.9], [4.2, .3, 2.9]],
+        [[-4.2, .3, -2.9], [-4.2, .3, 2.9]], [[4.2, .3, -2.9], [4.2, .3, 2.9]],
+        [[-4.2, 3.0, -2.9], [4.2, 3.0, -2.9]], [[-4.2, 3.0, 2.9], [4.2, 3.0, 2.9]],
+        [[-4.2, .3, -2.9], [-4.2, 3.0, -2.9]], [[4.2, .3, -2.9], [4.2, 3.0, -2.9]],
+      ];
+      rails.forEach(([a, b]) => {
+        const midPoint = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+        const size = [Math.abs(a[0] - b[0]) || .08, Math.abs(a[1] - b[1]) || .08, Math.abs(a[2] - b[2]) || .08];
+        if (size[0] < .1) size[0] = .08;
+        if (size[1] < .1) size[1] = .08;
+        if (size[2] < .1) size[2] = .08;
+        addBox(g, id, size, midPoint, { color: COLORS.steel, metalness: .75, roughness: .3 });
+      });
+      addBox(g, id, [8.15, 2.65, .035], [0, 1.65, -2.84], { color: COLORS.blueDeep, metalness: .1, roughness: .18, transparent: true, opacity: .19 });
+    });
+
+    const homes = [
+      [-0.0, 0, 0], [-.95, .42, -.45], [1.4, .44, -.35], [0, .7, 1.13], [2.35, .38, 1.7], [-2.35, .82, 1.72], [-.95, 1.25, -.45], [0, .2, 0],
+    ];
+    groups.forEach((group, index) => { group.userData.home.copy(vec(homes[index])); group.position.copy(group.userData.home); });
+    return { rig, groups };
+  }
+
+  function buildCooling(data) {
+    const rig = new THREE.Group();
+    rig.name = 'Cooling_Assembly';
+    const groups = [];
+    const add = (component, build) => {
+      const index = data.components.indexOf(component);
+      const group = componentGroup(component, index);
+      build(group, component.componentId);
+      rig.add(group);
+      groups.push(group);
+      return group;
+    };
+    const c = Object.fromEntries(data.components.map((component) => [component.componentId, component]));
+
+    add(c['cold-plate'], (g, id) => {
+      addCylinder(g, id, 1.16, .18, [0, 0, 0], { color: COLORS.copper, metalness: .8, roughness: .28, edgeColor: COLORS.steel });
+      addCylinder(g, id, .85, .08, [0, .13, 0], { color: COLORS.steelLight, metalness: .72, roughness: .3 });
+      for (let i = 0; i < 8; i += 1) addBox(g, id, [.055, .035, 1.2], [-.46 + i * .13, .21, 0], { color: COLORS.steel, metalness: .7, roughness: .34 });
+    });
+
+    add(c.pump, (g, id) => {
+      addCylinder(g, id, .84, .52, [-1.15, .34, 0], { color: COLORS.graphite, metalness: .62, roughness: .34, edgeColor: COLORS.steel });
+      addCylinder(g, id, .5, .08, [-1.15, .64, 0], { color: COLORS.blueDeep, metalness: .5, roughness: .28 });
+      addCylinder(g, id, .16, .1, [-1.15, .7, 0], { color: COLORS.accent, metalness: .4, roughness: .3 });
+      addTorus(g, id, .6, .035, [-1.15, .68, 0], { color: COLORS.steel, metalness: .8, roughness: .26 });
+    });
+
+    add(c.coolant, (g, id) => {
+      const tube = makeMaterial(COLORS.blue, { metalness: .25, roughness: .2, transparent: true, opacity: .82, emissive: COLORS.blueDeep, emissiveIntensity: .3 });
+      addTube(g, id, [[-.8, .5, .28], [-.2, .9, .65], [1.6, 1.0, .72], [2.1, .82, .48]], .115, { material: tube });
+      addTube(g, id, [[-.8, .2, -.28], [-.1, -.05, -.65], [1.62, -.1, -.72], [2.1, .34, -.45]], .115, { material: tube });
+    });
+
+    add(c.radiator, (g, id) => {
+      addBox(g, id, [2.8, 1.85, .3], [2.35, .65, 0], { color: COLORS.steel, metalness: .7, roughness: .36, edgeColor: COLORS.steelLight });
+      for (let i = 0; i < 18; i += 1) addBox(g, id, [.07, 1.62, .16], [1.05 + i * .15, .65, -.17], { color: i % 2 ? COLORS.graphite : COLORS.steelLight, metalness: .56, roughness: .42 });
+      addCylinder(g, id, .22, .2, [1.0, 1.05, 0], { color: COLORS.copper, metalness: .8, roughness: .28, rotation: [Math.PI / 2, 0, 0] });
+      addCylinder(g, id, .22, .2, [3.7, .24, 0], { color: COLORS.copper, metalness: .8, roughness: .28, rotation: [Math.PI / 2, 0, 0] });
+    });
+
+    add(c.fans, (g, id) => {
+      addTexturedFan(g, id, [1.65, .67, .34], .65, COLORS.graphiteDark);
+      addTexturedFan(g, id, [3.05, .67, .34], .65, COLORS.graphiteDark);
+    });
+
+    add(c.mount, (g, id) => {
+      addBox(g, id, [2.15, .1, 1.78], [-1.15, -.15, 0], { color: COLORS.graphiteDark, metalness: .65, roughness: .38, edgeColor: COLORS.steel });
+      [[-.98, -.83], [-.98, .83], [-1.32, -.83], [-1.32, .83]].forEach(([x, z]) => addCylinder(g, id, .09, .5, [x, .05, z], { color: COLORS.steelLight, metalness: .8, roughness: .26 }));
+      addBox(g, id, [1.7, .05, .08], [-1.15, .18, -.83], { color: COLORS.orange, metalness: .55, roughness: .35 });
+    });
+
+    const homes = [[-0.5, .05, 0], [-1.15, .45, 0], [0, .55, 0], [2.35, .65, 0], [2.35, .65, .34], [-1.15, -.08, 0]];
+    groups.forEach((group, index) => { group.userData.home.copy(vec(homes[index])); group.position.copy(group.userData.home); });
+    return { rig, groups };
+  }
+
+  function buildKeyboard(data) {
+    const rig = new THREE.Group();
+    rig.name = 'Keyboard_Assembly';
+    const groups = [];
+    const add = (component, build) => {
+      const index = data.components.indexOf(component);
+      const group = componentGroup(component, index);
+      build(group, component.componentId);
+      rig.add(group);
+      groups.push(group);
+      return group;
+    };
+    const c = Object.fromEntries(data.components.map((component) => [component.componentId, component]));
+
+    add(c.case, (g, id) => {
+      addBox(g, id, [7.0, .42, 2.72], [0, 0, 0], { color: COLORS.graphiteDark, metalness: .58, roughness: .42, edgeColor: COLORS.steel });
+      addBox(g, id, [6.65, .1, 2.35], [0, .25, 0], { color: COLORS.graphite, metalness: .4, roughness: .52 });
+      addBox(g, id, [.28, .24, 2.45], [-3.32, .38, 0], { color: COLORS.steel, metalness: .62, roughness: .35 });
+      addBox(g, id, [.28, .24, 2.45], [3.32, .38, 0], { color: COLORS.steel, metalness: .62, roughness: .35 });
+    });
+
+    add(c.plate, (g, id) => {
+      addBox(g, id, [6.55, .1, 2.28], [0, .48, 0], { color: COLORS.steel, metalness: .72, roughness: .32, edgeColor: COLORS.steelLight });
+      for (let row = 0; row < 4; row += 1) for (let col = 0; col < 13; col += 1) addBox(g, id, [.39, .04, .39], [-2.9 + col * .48, .55, -.76 + row * .5], { color: COLORS.graphiteDark, metalness: .3, roughness: .5 });
+    });
+
+    add(c.pcb, (g, id) => {
+      addBox(g, id, [6.35, .12, 2.2], [0, .27, 0], { color: COLORS.board, metalness: .2, roughness: .7, edgeColor: COLORS.boardEdge });
+      for (let row = 0; row < 5; row += 1) addBox(g, id, [5.85, .03, .035], [0, .36, -.83 + row * .4], { color: COLORS.copper, metalness: .72, roughness: .32 });
+      addBox(g, id, [.9, .08, .65], [2.4, .4, .18], { color: COLORS.blueDeep, metalness: .45, roughness: .38 });
+    });
+
+    add(c.switches, (g, id) => {
+      for (let row = 0; row < 4; row += 1) for (let col = 0; col < 13; col += 1) {
+        const x = -2.9 + col * .48;
+        const z = -.76 + row * .5;
+        addBox(g, id, [.31, .32, .31], [x, .72, z], { color: COLORS.graphiteDark, metalness: .5, roughness: .4 });
+        addCylinder(g, id, .08, .08, [x, .91, z], { color: COLORS.orange, metalness: .34, roughness: .35 });
+      }
+    });
+
+    add(c.keycaps, (g, id) => {
+      const widths = [13, 13, 12, 11];
+      for (let row = 0; row < widths.length; row += 1) {
+        const count = widths[row];
+        const offset = row * .18;
+        for (let col = 0; col < count; col += 1) {
+          const x = -2.9 + offset + col * .48;
+          const z = -.76 + row * .5;
+          const width = (row === 3 && col === count - 1) ? .72 : .41;
+          addBox(g, id, [width, .22, .4], [x, 1.08, z], { color: row === 0 ? COLORS.steelLight : COLORS.steel, metalness: .25, roughness: .46, edgeColor: COLORS.white });
+        }
+      }
+      addBox(g, id, [2.3, .22, .4], [.05, 1.08, 1.18], { color: COLORS.steel, metalness: .25, roughness: .46, edgeColor: COLORS.white });
+    });
+
+    add(c.stabilizers, (g, id) => {
+      const wire = makeMaterial(COLORS.orange, { metalness: .72, roughness: .28 });
+      addTube(g, id, [[-1.05, .92, 1.18], [-1.05, .92, 1.42], [1.05, .92, 1.42], [1.05, .92, 1.18]], .035, { material: wire });
+      addBox(g, id, [.24, .18, .28], [-1.05, .82, 1.16], { color: COLORS.graphiteDark, metalness: .48, roughness: .38 });
+      addBox(g, id, [.24, .18, .28], [1.05, .82, 1.16], { color: COLORS.graphiteDark, metalness: .48, roughness: .38 });
+    });
+
+    add(c.controller, (g, id) => {
+      addBox(g, id, [1.0, .16, .7], [2.48, .48, 0], { color: COLORS.blue, metalness: .35, roughness: .42, edgeColor: COLORS.steel });
+      addBox(g, id, [.34, .22, .42], [3.08, .48, 0], { color: COLORS.steelLight, metalness: .7, roughness: .3 });
+      addBox(g, id, [.42, .08, .08], [2.35, .6, -.3], { color: COLORS.orange, metalness: .5, roughness: .3 });
+    });
+
+    const homes = [[0, .05, 0], [0, .52, 0], [0, .31, 0], [0, .72, 0], [0, .98, 0], [0, .82, .03], [0, .45, 0]];
+    groups.forEach((group, index) => { group.userData.home.copy(vec(homes[index])); group.position.copy(group.userData.home); });
+    return { rig, groups };
+  }
+
+  function addEnvironment(scene, key) {
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(key === 'pc' ? 7.5 : 6.4, 64), new THREE.MeshStandardMaterial({ color: 0x0b1118, roughness: .82, metalness: .08, transparent: true, opacity: .84 }));
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = key === 'keyboard' ? -.45 : -.55;
+    floor.receiveShadow = true;
+    scene.add(floor);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(key === 'pc' ? 4.1 : 3.2, key === 'pc' ? 4.12 : 3.22, 64), new THREE.MeshBasicMaterial({ color: 0x29425c, transparent: true, opacity: .2, side: THREE.DoubleSide }));
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = floor.position.y + .01;
+    scene.add(ring);
+  }
+
+  class LabScene {
+    constructor(section, data) {
+      this.section = section;
+      this.data = data;
+      this.canvas = section.querySelector('[data-scene-canvas]');
+      this.active = false;
+      this.progress = 0;
+      this.currentIndex = 0;
+      this.needsRender = true;
+      this.renderer = null;
+      this.scrollTrigger = null;
+      this.groups = [];
+      this.meshes = [];
+      this.raycaster = new THREE.Raycaster();
+      this.pointer = new THREE.Vector2();
+      this.setup();
+    }
+
+    setup() {
+      if (!supportsWebGL) {
+        this.section.classList.add('no-webgl');
+        this.section.querySelectorAll('[data-webgl-note]').forEach((note) => { note.hidden = false; });
+        return;
+      }
+      try {
+        this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: !lowPower, alpha: true, powerPreference: 'high-performance' });
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPower ? 1.25 : 1.8));
+        this.renderer.setClearColor(0x000000, 0);
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.08;
+        this.renderer.shadowMap.enabled = !lowPower;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.PerspectiveCamera(34, 1, .1, 100);
+        this.camera.position.set(...this.data.view.overview.position);
+        this.scene.add(new THREE.HemisphereLight(0x9bb9d8, 0x090d13, 1.7));
+        const key = new THREE.DirectionalLight(0xe7eff8, 3.1);
+        key.position.set(-5, 9, 7);
+        key.castShadow = !lowPower;
+        key.shadow.mapSize.set(1024, 1024);
+        this.scene.add(key);
+        const rim = new THREE.DirectionalLight(COLORS.blue, 2.2);
+        rim.position.set(7, 4, -7);
+        this.scene.add(rim);
+        const accent = new THREE.PointLight(COLORS.accent, 10, 18);
+        accent.position.set(-1, 4, 4);
+        this.scene.add(accent);
+        addEnvironment(this.scene, this.data.key);
+
+        const built = this.data.key === 'pc' ? buildPC(this.data) : this.data.key === 'cooling' ? buildCooling(this.data) : buildKeyboard(this.data);
+        this.rig = built.rig;
+        this.groups = built.groups;
+        this.groups.forEach((group) => { group.traverse((node) => { if (node.isMesh && node.userData.componentId) this.meshes.push(node); }); });
+        this.scene.add(this.rig);
+        this.states = this.buildStates();
+        this.bindCanvas();
+        this.resize();
+        this.applyProgress(0);
+      } catch (error) {
+        console.warn('Assembly 3D scene unavailable', error);
+        this.section.classList.add('no-webgl');
+        this.section.querySelectorAll('[data-webgl-note]').forEach((note) => { note.hidden = false; });
+      }
+    }
+
+    buildStates() {
+      const states = [{ camera: this.data.view.overview, offsets: this.groups.map(() => new THREE.Vector3()), active: -1 }];
+      this.data.components.forEach((component, index) => {
+        const offsets = this.groups.map(() => new THREE.Vector3());
+        offsets[index].copy(this.groups[index].userData.focusOffset);
+        states.push({ camera: component.cameraFocus, offsets, active: index });
+      });
+      states.push({ camera: this.data.view.final, offsets: this.groups.map((group) => group.userData.explodedOffset.clone()), active: -1 });
+      states.push({ camera: this.data.view.final, offsets: this.groups.map(() => new THREE.Vector3()), active: -1 });
+      return states;
+    }
+
+    bindCanvas() {
+      if (!this.canvas) return;
+      this.canvas.addEventListener('pointerdown', (event) => {
+        if (!this.active) {
+          this.activate();
           return;
         }
-        const st = tl.scrollTrigger;
-        window.scrollTo({
-          top: st.start + (st.end - st.start) * (i / 6),
-          behavior: 'smooth',
+        if (!this.renderer) return;
+        const bounds = this.canvas.getBoundingClientRect();
+        this.pointer.x = ((event.clientX - bounds.left) / bounds.width) * 2 - 1;
+        this.pointer.y = -((event.clientY - bounds.top) / bounds.height) * 2 + 1;
+        this.raycaster.setFromCamera(this.pointer, this.camera);
+        const hits = this.raycaster.intersectObjects(this.meshes, false);
+        if (!hits.length) return;
+        let node = hits[0].object;
+        while (node && !Number.isInteger(node.userData.componentIndex) && node.parent) node = node.parent;
+        if (node && Number.isInteger(node.userData.componentIndex)) this.goToIndex(node.userData.componentIndex + 1);
+      });
+      this.canvas.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          if (!this.active) this.activate();
+        }
+      });
+    }
+
+    activate() {
+      if (this.active) return;
+      this.active = true;
+      this.section.classList.add('is-activated');
+      this.section.querySelectorAll('[data-activation-status]').forEach((element) => { element.textContent = 'scroll-linked / active'; });
+      if (!reducedMotion && this.renderer && this.progress < 0.015) {
+        gsap.to(this, {
+          progress: 0.045,
+          duration: 0.85,
+          ease: 'power2.out',
+          overwrite: true,
+          onUpdate: () => this.applyProgress(this.progress),
         });
+      } else {
+        this.applyProgress(this.progress);
+      }
+      if (this.scrollTrigger) this.scrollTrigger.update();
+    }
+
+    resize() {
+      if (!this.renderer || !this.canvas) return;
+      const width = this.canvas.clientWidth;
+      const height = this.canvas.clientHeight;
+      if (!width || !height) return;
+      this.renderer.setSize(width, height, false);
+      this.camera.aspect = width / height;
+      this.camera.updateProjectionMatrix();
+      this.needsRender = true;
+      this.render();
+    }
+
+    applyProgress(progress) {
+      this.progress = Math.max(0, Math.min(1, progress));
+      if (!this.renderer) return;
+      if (!this.active) {
+        this.setState(0, 0);
+        this.updateUI(0);
+        return;
+      }
+      const total = this.states.length - 1;
+      const raw = this.progress * total;
+      const fromIndex = Math.min(total - 1, Math.floor(raw));
+      const toIndex = Math.min(total, fromIndex + 1);
+      const local = raw - fromIndex;
+      this.setState(fromIndex, local, toIndex);
+      const activeIndex = Math.min(total, Math.round(raw));
+      this.updateUI(activeIndex);
+    }
+
+    setState(fromIndex, local, toIndex = fromIndex + 1) {
+      const from = this.states[fromIndex];
+      const to = this.states[toIndex] || from;
+      const cameraPosition = vec(from.camera.position).lerp(vec(to.camera.position), local);
+      const cameraTarget = vec(from.camera.target).lerp(vec(to.camera.target), local);
+      this.camera.position.copy(cameraPosition);
+      this.camera.lookAt(cameraTarget);
+      this.camera.fov = lerp(from.camera.fov || 34, to.camera.fov || 34, local);
+      this.camera.updateProjectionMatrix();
+      const rotation = from.camera.rotation.map((value, index) => lerp(value, (to.camera.rotation || from.camera.rotation)[index], local));
+      this.rig.rotation.set(rotation[0], rotation[1], rotation[2]);
+      this.groups.forEach((group, index) => {
+        const offset = from.offsets[index].clone().lerp(to.offsets[index], local);
+        group.position.copy(group.userData.home).add(offset);
+        group.rotation.x = lerp(fromIndex === index + 1 ? -.04 : 0, toIndex === index + 1 ? -.04 : 0, local);
+        const selected = (Math.round(lerp(from.active, to.active, local)) === index) && from.active !== -1 && to.active !== -1;
+        this.styleGroup(group, selected, from.active === -1 && to.active === -1);
+      });
+      this.needsRender = true;
+      this.render();
+    }
+
+    styleGroup(group, selected, overview) {
+      group.userData.meshes.forEach((mesh) => {
+        const material = mesh.material;
+        if (!material || !material.userData) return;
+        const base = material.userData.baseOpacity ?? 1;
+        const opacity = overview ? base : selected ? base : base * .24;
+        material.opacity = opacity;
+        material.transparent = opacity < 1 || base < 1;
+        material.emissive.setHex(selected ? COLORS.accent : material.userData.baseEmissive);
+        material.emissiveIntensity = selected ? .34 : 0;
+      });
+    }
+
+    updateUI(index) {
+      const max = this.states ? this.states.length - 1 : this.data.components.length + 2;
+      const finalIndex = max;
+      const summaryIndex = this.data.components.length + 1;
+      const component = index > 0 && index <= this.data.components.length ? this.data.components[index - 1] : null;
+      const label = component ? component.componentName : index === summaryIndex ? 'exploded system map' : index === finalIndex ? 'complete assembly' : this.data.overview.label;
+      const kicker = component ? `Focus / ${component.shortName}` : index === summaryIndex ? 'Final / system map' : index === finalIndex ? 'Complete / reassembled' : this.data.key === 'pc' ? 'Full assembly' : this.data.key === 'cooling' ? 'Loop overview' : 'Keyboard overview';
+      this.currentIndex = index;
+      this.section.querySelectorAll('[data-scene-label]').forEach((element) => { element.textContent = label.toLowerCase(); });
+      this.section.querySelectorAll('[data-scene-kicker]').forEach((element) => { element.textContent = kicker; });
+      this.section.querySelectorAll('[data-scene-progress]').forEach((element) => { element.textContent = `${String(index).padStart(2, '0')} / ${String(max).padStart(2, '0')}`; });
+      this.section.querySelectorAll('[data-step-index]').forEach((element) => element.classList.toggle('is-active', Number(element.dataset.stepIndex) === index));
+      this.section.querySelectorAll('[data-stage-prev]').forEach((button) => { button.disabled = index <= 0; });
+      this.section.querySelectorAll('[data-stage-next]').forEach((button) => { button.disabled = index >= max; });
+    }
+
+    render() {
+      if (!this.renderer || !this.needsRender || document.hidden) return;
+      this.renderer.render(this.scene, this.camera);
+      this.needsRender = false;
+    }
+
+    goToIndex(index) {
+      if (!this.active) this.activate();
+      const max = this.states ? this.states.length - 1 : this.data.components.length + 2;
+      const nextIndex = Math.max(0, Math.min(max, index));
+      if (!this.scrollTrigger) {
+        this.currentIndex = nextIndex;
+        this.updateUI(nextIndex);
+        const card = this.section.querySelector(`[data-step-index="${nextIndex}"]`);
+        card?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'center' });
+        return;
+      }
+      const destination = this.scrollTrigger.start + (this.scrollTrigger.end - this.scrollTrigger.start) * (nextIndex / max);
+      window.scrollTo({ top: destination, behavior: reducedMotion ? 'auto' : 'smooth' });
+    }
+  }
+
+  function renderSteps(section, data) {
+    const list = section.querySelector('[data-step-list]');
+    if (!list) return;
+    const items = [{ ...data.overview, componentId: 'overview', shortName: 'Overview', relatedComponents: data.components.map((component) => component.shortName), technicalSources: [] }, ...data.components, {
+      componentId: 'summary', componentName: 'Exploded system map', shortName: 'System map',
+      description: `The ${data.name.toLowerCase()} opens into a map of cooperating layers. Read the positions, then continue one step to see the complete assembly again.`,
+      primaryFunction: 'See how the components form one system.',
+      howItWorks: data.components.map((component) => component.shortName).join(' · ') + ' form a readable chain of jobs.',
+      relatedComponents: data.components.slice(0, 4).map((component) => component.shortName), technicalSources: [],
+    }, {
+      componentId: 'complete', componentName: 'Assembly complete', shortName: 'Complete',
+      description: `The ${data.name.toLowerCase()} is back together. You can revisit any component or continue to the next exhibition.`,
+      primaryFunction: 'Hold the system in a working arrangement.',
+      howItWorks: 'The final view restores the original positions so the relationship between layers can be remembered as one machine.',
+      relatedComponents: data.components.slice(0, 4).map((component) => component.shortName), technicalSources: [],
+    }];
+    list.innerHTML = items.map((item, index) => {
+      const sources = (item.technicalSources || []).map((link) => `<a href="${escapeHTML(link.url)}" target="_blank" rel="noreferrer">${escapeHTML(link.label)} ↗</a>`).join('');
+      const related = (item.relatedComponents || []).map((label) => `<span>${escapeHTML(label)}</span>`).join('');
+      const isFinal = item.componentId === 'summary' || item.componentId === 'complete';
+      const isOverview = item.componentId === 'overview';
+      return `<article class="learning-step ${isFinal ? 'final-step' : ''}" data-step-index="${index}" id="${data.key}-${escapeHTML(item.componentId)}">
+        <div class="step-kicker mono"><span>${isOverview ? 'START HERE' : isFinal ? 'REASSEMBLE' : 'COMPONENT FOCUS'}</span><span class="step-kicker__no">${String(index).padStart(2, '0')} / ${String(items.length - 1).padStart(2, '0')}</span></div>
+        <h3>${escapeHTML(item.componentName || item.label)}</h3>
+        <p class="learning-step__description">${escapeHTML(item.description)}</p>
+        <div class="step-details">
+          <div class="step-detail"><span class="step-detail__label">Primary function</span><p>${escapeHTML(item.primaryFunction)}</p></div>
+          <div class="step-detail"><span class="step-detail__label">How it works</span><p>${escapeHTML(item.howItWorks)}</p></div>
+          <div class="step-detail"><span class="step-detail__label">3D sequence</span><p>${escapeHTML(item.animationSequence || 'The model remains assembled while the learning sequence introduces the next layer.')}</p></div>
+        </div>
+        <div class="step-related" aria-label="Related components">${related}</div>
+        ${sources ? `<div class="step-sources"><span class="step-detail__label">Read more</span>${sources}</div>` : ''}
+      </article>`;
+    }).join('');
+  }
+
+  function renderReferences(section, data) {
+    const rail = section.querySelector('[data-reference-rail]');
+    if (!rail) return;
+    rail.innerHTML = `<div class="reference-rail__head"><strong>Visual references</strong><span>photos and studies</span></div><div class="reference-rail__grid">${data.references.map((reference, index) => `<a class="reference-thumb" href="${escapeHTML(reference.sourceUrl || '#sources')}" ${reference.sourceUrl && reference.sourceUrl.startsWith('http') ? 'target="_blank" rel="noreferrer"' : ''}><figure><img src="${escapeHTML(reference.src)}" alt="${escapeHTML(reference.label)}" loading="lazy"><figcaption><span class="mono">REF / 0${index + 1}</span><span><strong>${escapeHTML(reference.label)}</strong><small>${escapeHTML(reference.source)}</small></span></figcaption></figure></a>`).join('')}</div>`;
+  }
+
+  const scenes = [];
+  document.querySelectorAll('[data-lab]').forEach((section) => {
+    const key = section.dataset.lab;
+    const data = HARDWARE[key];
+    if (!data) return;
+    renderSteps(section, data);
+    renderReferences(section, data);
+    section.querySelectorAll('[data-copy-count]').forEach((element) => { element.textContent = `${String(data.components.length).padStart(2, '0')} nodes`; });
+    const scene = new LabScene(section, data);
+    scenes.push(scene);
+
+    section.querySelectorAll('[data-activate]').forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        scene.activate();
+        scene.canvas?.focus({ preventScroll: true });
       });
     });
-  }
+    section.querySelectorAll('[data-stage-prev]').forEach((button) => button.addEventListener('click', () => scene.goToIndex(scene.currentIndex - 1)));
+    section.querySelectorAll('[data-stage-next]').forEach((button) => button.addEventListener('click', () => scene.goToIndex(scene.currentIndex + 1)));
 
-  /* Potongan: titik yang sama diproyeksikan ke satu bidang 2D. */
-  function drawProfile() {
-    if (!profileCanvas) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const w = profileCanvas.clientWidth || 800;
-    const h = 160;
-    profileCanvas.width = Math.round(w * dpr);
-    profileCanvas.height = Math.round(h * dpr);
-    const ctx = profileCanvas.getContext('2d');
-    if (!ctx) return;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, w, h);
-    const baseY = h - 24;
-    ctx.strokeStyle = C.rule.hex;
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(0, baseY); ctx.lineTo(w, baseY); ctx.stroke();
-
-    const pts = profilePoints.length ? profilePoints : (() => {
-      let s = 19;
-      const out = [];
-      for (let i = 0; i < 900; i += 1) {
-        s = (s * 16807) % 2147483647;
-        const r1 = s / 2147483647;
-        s = (s * 16807) % 2147483647;
-        const r2 = s / 2147483647;
-        out.push({ x: (r1 - 0.5) * 10, y: r2 * 1.3 });
-      }
-      return out;
-    })();
-    ctx.fillStyle = C.pointMid.hex;
-    pts.forEach((p) => {
-      const x = ((p.x + 5) / 10) * w;
-      const y = baseY - Math.max(0, Math.min(1, p.y / 1.5)) * (h - 40);
-      ctx.globalAlpha = 0.18 + Math.max(0, Math.min(1, p.y / 1.5)) * 0.6;
-      ctx.fillRect(x, y, 1.5, 1.5);
-    });
-    ctx.globalAlpha = 1;
-
-    ctx.strokeStyle = C.rule2.hex;
-    ctx.beginPath();
-    ctx.moveTo(w * 0.18, baseY); ctx.lineTo(w * 0.18, baseY - 26); ctx.lineTo(w * 0.3, baseY - 26);
-    ctx.moveTo(w * 0.64, baseY - 92); ctx.lineTo(w * 0.64, baseY - 26); ctx.lineTo(w * 0.76, baseY - 26);
-    ctx.stroke();
-    ctx.fillStyle = C.accent.hex;
-    ctx.fillRect(w * 0.18 - 1.5, baseY - 27.5, 3, 3);
-    ctx.fillRect(w * 0.64 - 1.5, baseY - 93.5, 3, 3);
-  }
-
-  function resize() {
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
-    if (!w || !h) return;
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-    uniforms.uPixelRatio.value = renderer.getPixelRatio();
-    drawProfile();
-    needsRender = true;
-  }
-
-  bindLayers();
-  bindStages();
-  window.addEventListener('resize', resize);
-  resize();
-  apply(S);
-
-  gsap.ticker.add(() => {
-    if (document.hidden || !needsRender) return;
-    renderer.render(scene, camera);
-    needsRender = false;
-  });
-
-  if (reduced) {
-    body.classList.add('is-reduced');
-    const k = key(6);
-    Object.keys(k).forEach((p) => { if (p !== 'duration' && p !== 'ease') S[p] = k[p]; });
-    apply(S);
-    paintUI(6, 1);
-    needsRender = true;
-    return;
-  }
-
-  tl = gsap.timeline({
-    scrollTrigger: {
-      trigger: '#journey',
-      start: 'top top',
-      end: 'bottom bottom',
-      scrub: 0.8,
+    if (!scene.renderer) return;
+    scene.scrollTrigger = ScrollTrigger.create({
+      id: `assembly-${key}`,
+      trigger: section.querySelector('.lab-layout'),
+      start: 'top top+=90',
+      end: () => `+=${Math.max(window.innerHeight * (data.components.length + 1) * .82, 1900)}`,
+      scrub: reducedMotion ? false : .65,
       invalidateOnRefresh: true,
-      onRefresh: () => { needsRender = true; },
-    },
-    onUpdate: sync,
+      onUpdate: (self) => scene.applyProgress(self.progress),
+      onRefresh: (self) => scene.applyProgress(self.progress),
+    });
+    scene.applyProgress(scene.scrollTrigger.progress);
   });
-  for (let i = 1; i <= 6; i += 1) tl.to(S, key(i), i - 1);
-  ScrollTrigger.addEventListener('refresh', () => { needsRender = true; });
-  sync();
+
+  const goToStep = (event) => {
+    const target = event.target.closest('[data-step-index]');
+    if (!target) return;
+    const section = target.closest('[data-lab]');
+    const scene = scenes.find((item) => item.section === section);
+    if (!scene) return;
+    const index = Number(target.dataset.stepIndex);
+    if (!scene.active) scene.activate();
+    scene.goToIndex(index);
+  };
+  document.querySelectorAll('[data-step-list]').forEach((list) => list.addEventListener('click', goToStep));
+
+  const onResize = () => scenes.forEach((scene) => scene.resize());
+  window.addEventListener('resize', onResize, { passive: true });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) scenes.forEach((scene) => { scene.needsRender = true; scene.render(); }); });
+
+  if (reducedMotion) document.body.classList.add('reduced-motion');
+  if (!supportsWebGL) document.body.classList.add('no-webgl-global');
+  requestAnimationFrame(() => scenes.forEach((scene) => scene.render()));
 })();

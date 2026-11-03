@@ -1,247 +1,228 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
-  <title>Pindai papan induk, Hardware Explorer</title>
-  <meta name="description" content="Awan titik tiga dimensi menyusun papan induk, lalu gulir membongkar CPU, memori dan kartu grafis sebelum merakitnya kembali.">
+  <title>Assembly, hardware anatomy lab</title>
+  <meta name="description" content="An interactive 3D lab for learning how a computer, a cooling system, and a mechanical keyboard work together.">
   <link rel="icon" href="data:,">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Geologica:wght,CRSV,SHRP@200..500,0,0..100&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="vendor/gsap.min.js" defer></script>
   <script src="vendor/ScrollTrigger.min.js" defer></script>
   <script type="module" src="app.js"></script>
 </head>
 <body>
-  <a class="skip" href="#journey">Lewati ke penjelajahan</a>
+  <a class="skip" href="#main">Skip to the lab</a>
 
-  <div class="backdrop" aria-hidden="true"></div>
-  <canvas id="scene" aria-hidden="true"></canvas>
-
-  <div class="callout" data-callout aria-hidden="true">
-    <span class="callout__dot"></span>
-    <span class="callout__line"></span>
-    <span class="callout__label" data-callout-label>Soket prosesor</span>
-    <span class="callout__fig num" data-callout-fig>01 / 07</span>
-  </div>
-
-  <aside class="hud" aria-label="Tahap pindai">
-    <p class="hud__tahap" data-hud-tahap>Rakit utuh</p>
-    <p class="hud__no num" data-hud-no>00 / 06</p>
-    <div class="rail"><i data-rail></i></div>
-    <p class="hud__persen num" data-hud-persen>0%</p>
-    <ol class="hud__stages">
-      <li><button type="button" class="stage is-active" data-stage="0">Rakit utuh</button></li>
-      <li><button type="button" class="stage" data-stage="1">Unit pemroses</button></li>
-      <li><button type="button" class="stage" data-stage="2">Memori</button></li>
-      <li><button type="button" class="stage" data-stage="3">Grafis</button></li>
-      <li><button type="button" class="stage" data-stage="4">Daya dan simpan</button></li>
-      <li><button type="button" class="stage" data-stage="5">Tampilan lepas</button></li>
-      <li><button type="button" class="stage" data-stage="6">Utuh kembali</button></li>
-    </ol>
-    <p class="sr" aria-live="polite" data-announce></p>
-  </aside>
-
-  <header class="bar">
-    <div class="container bar__in">
-      <a class="brand" href="#top" aria-label="Pindai, kembali ke atas"><span class="brand__mark" aria-hidden="true">///</span>pindai</a>
-      <nav class="bar__nav" aria-label="Bagian halaman">
-        <a href="#journey">Penjelajahan</a>
-        <a href="#lapisan">Lapisan</a>
-        <a href="#register">Register</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#pc" aria-label="Assembly, back to top">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span>assembly<span class="brand-dot">.</span></span>
+      </a>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="#pc">PC anatomy</a>
+        <a href="#cooling">Cooling loop</a>
+        <a href="#keyboard">Keyboard</a>
+        <a href="#sources">Sources</a>
       </nav>
-      <a class="btn btn--primary" href="#journey">Mulai pindai</a>
+      <div class="header-meta"><span class="status-dot"></span><span>open learning lab</span></div>
     </div>
   </header>
 
-  <main>
-    <section class="hero" id="top" aria-labelledby="judul">
-      <div class="container hero__grid">
-        <div class="hero__copy">
-          <h1 id="judul">Papan induk, tujuh kali dipindai</h1>
-          <p class="lead">Awan titik menyusun komponen, lalu kamera membongkar dan merakitnya kembali.</p>
-          <div class="aksi">
-            <a class="btn btn--primary" href="#journey">Mulai pindai</a>
-            <a class="btn btn--line" href="#register">Lihat register</a>
+  <main id="main">
+    <section class="lab-section lab-section--pc" id="pc" data-lab="pc" aria-labelledby="pc-title">
+      <div class="lab-heading">
+        <div class="lab-heading__index mono">01 <span>/ 03</span></div>
+        <div class="lab-heading__copy">
+          <h1 id="pc-title">A computer is a<br><em>system of layers.</em></h1>
+          <p class="eyebrow">Explore hardware in 3D</p>
+          <p class="intro">Click to enter. Scroll each layer. Watch the system return.</p>
+          <div class="heading-actions">
+            <button class="button button--bright" type="button" data-activate>Enter exploration <span aria-hidden="true">↗</span></button>
+            <a class="text-link" href="#cooling">Next: thermal loop <span aria-hidden="true">↓</span></a>
           </div>
-          <p class="fine">Tujuh tahap, satu kanvas, tanpa section yang disematkan.</p>
         </div>
-        <div class="hero__ukur ticks" aria-hidden="true">
-          <p class="figure">07</p>
-          <p class="ukur">tahap pindai dalam satuan adegan</p>
-        </div>
-      </div>
-      <p class="cue" data-cue>Gulir untuk menyusur papan</p>
-    </section>
-
-    <section class="journey" id="journey" aria-labelledby="journey-judul">
-      <div class="container">
-        <div class="section-head">
-          <h2 id="journey-judul">Tujuh tahap, satu papan</h2>
-          <p class="section-lead">Gulir menggerakkan kamera, objek dan catatan pada waktu yang sama.</p>
-        </div>
-        <div class="steps">
-          <article class="step is-active" data-step="0" id="tahap-0">
-            <h3>Rakit utuh</h3>
-            <p>Seluruh komponen duduk pada papan. Kamera melihat dari tiga perempat, jauh, sebelum turun ke detail.</p>
-            <p class="ukur num">Tahap 01, kamera 13,5 satuan</p>
-          </article>
-          <article class="step" data-step="1" id="tahap-1">
-            <h3>Unit pemroses</h3>
-            <p>Sapuan lime melewati soket. Prosesor, IHS dan pendingin naik, memperlihatkan tumpukan logam di atas die.</p>
-            <p class="ukur num">Tahap 02, fokus cpu</p>
-          </article>
-          <article class="step" data-step="2" id="tahap-2">
-            <h3>Memori</h3>
-            <p>Empat keping berdiri di sela soket. Kamera bergeser ke kanan, keping terangkat satu per satu.</p>
-            <p class="ukur num">Tahap 03, fokus ram</p>
-          </article>
-          <article class="step" data-step="3" id="tahap-3">
-            <h3>Grafis</h3>
-            <p>Kartu panjang melintang di jalur ekspansi. Kamera turun ke dua kipas, lalu kartu terangkat dari slotnya.</p>
-            <p class="ukur num">Tahap 04, fokus gpu</p>
-          </article>
-          <article class="step" data-step="4" id="tahap-4">
-            <h3>Daya dan simpan</h3>
-            <p>Drive tipis, blok regulator dan port belakang ikut terangkat. Urutan ini menjaga letak tetap terbaca.</p>
-            <p class="ukur num">Tahap 05, fokus storage, vrm, io</p>
-          </article>
-          <article class="step" data-step="5" id="tahap-5">
-            <h3>Tampilan lepas</h3>
-            <p>Kamera mundur. Semua bagian bergerak ke posisi lepas dengan sedikit rotasi, membentuk peta letak yang utuh.</p>
-            <p class="ukur num">Tahap 06, exploded view</p>
-          </article>
-          <article class="step" data-step="6" id="tahap-6">
-            <h3>Utuh kembali</h3>
-            <p>Bagian turun ke tempatnya. Kamera berhenti pada sudut akhir, papan kembali menjadi satu kesatuan.</p>
-            <p class="ukur num">Tahap 07, assembly</p>
-          </article>
+        <div class="lab-heading__measure mono">
+          <strong>08</strong>
+          <span>identifiable<br>components</span>
         </div>
       </div>
-    </section>
 
-    <section class="layers" id="lapisan" aria-labelledby="lapisan-judul">
-      <div class="container">
-        <div class="section-head">
-          <h2 id="lapisan-judul">Lapisan yang bisa dimatikan</h2>
-          <p class="section-lead">Setiap titik masuk ke satu lapisan. Sakelar benar-benar menyembunyikannya dari adegan.</p>
+      <div class="lab-layout">
+        <div class="lab-copy">
+          <div class="lab-copy__topline">
+            <span class="mono">PC, ATX desktop</span>
+            <span data-copy-count>08 nodes</span>
+          </div>
+          <div class="step-list" data-step-list></div>
+          <div class="reference-rail" data-reference-rail></div>
         </div>
-        <div class="layers__grid">
-          <ul class="switches">
-            <li>
-              <label class="switch">
-                <input type="checkbox" data-layer="0" checked>
-                <span class="switch__track"><span class="switch__knob"></span></span>
-                <span class="switch__text">Dasar papan<span class="switch__hint">Bidang dan dudukan</span></span>
-              </label>
-            </li>
-            <li>
-              <label class="switch">
-                <input type="checkbox" data-layer="1" checked>
-                <span class="switch__track"><span class="switch__knob"></span></span>
-                <span class="switch__text">Jalur tembaga<span class="switch__hint">Jalur yang terukur</span></span>
-              </label>
-            </li>
-            <li>
-              <label class="switch">
-                <input type="checkbox" data-layer="2" checked>
-                <span class="switch__track"><span class="switch__knob"></span></span>
-                <span class="switch__text">Komponen<span class="switch__hint">Tujuh grup objek</span></span>
-              </label>
-            </li>
-            <li>
-              <label class="switch">
-                <input type="checkbox" data-layer="3" checked>
-                <span class="switch__track"><span class="switch__knob"></span></span>
-                <span class="switch__text">Ditemukan<span class="switch__hint">Titik yang disorot sapuan</span></span>
-              </label>
-            </li>
-          </ul>
-          <div class="layers__note ticks">
-            <p class="figure">04</p>
-            <p class="ukur">lapisan titik, semuanya dari geometri yang sama</p>
+
+        <div class="lab-stage-column">
+          <div class="lab-stage ticks" data-stage>
+            <canvas class="scene-canvas" data-scene-canvas tabindex="0" aria-label="Interactive 3D model of a desktop computer. Click to activate the hardware exploration."></canvas>
+            <div class="stage-grid" aria-hidden="true"></div>
+            <div class="scene-label scene-label--top"><span class="scene-label__dot"></span><span data-scene-kicker>Full assembly</span></div>
+            <div class="scene-label scene-label--bottom"><span class="mono" data-scene-progress>00 / 10</span><span data-scene-label>complete system</span></div>
+            <button class="stage-activate" type="button" data-activate>
+              <span class="stage-activate__ring"><span>↗</span></span>
+              <span><strong>Click the model</strong><small>to start the scan</small></span>
+            </button>
+            <div class="webgl-note" data-webgl-note hidden>3D canvas unavailable. Use the component notes below to continue.</div>
+          </div>
+          <div class="stage-controls">
+            <button class="stage-control" type="button" data-stage-prev aria-label="Previous component"><span>Previous component</span></button>
+            <div class="stage-control__status"><span data-activation-status aria-live="polite">Waiting for activation</span></div>
+            <button class="stage-control" type="button" data-stage-next aria-label="Next component"><span>Next component</span></button>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="register" id="register" aria-labelledby="register-judul">
-      <div class="container">
-        <div class="section-head">
-          <h2 id="register-judul">Register pindai</h2>
-          <p class="section-lead">Baris sama dengan yang digerakkan di adegan, dengan jarak kamera dalam satuan adegan.</p>
+    <div class="section-divider" aria-hidden="true"><span></span></div>
+
+    <section class="lab-section lab-section--cooling" id="cooling" data-lab="cooling" aria-labelledby="cooling-title">
+      <div class="lab-heading">
+        <div class="lab-heading__index mono">02 <span>/ 03</span></div>
+        <div class="lab-heading__copy">
+          <h2 id="cooling-title">Heat has a<br><em>route to follow.</em></h2>
+          <p class="eyebrow">Thermal path, liquid cooling</p>
+          <p class="intro">Click to enter. Follow heat through the loop, from plate to fins.</p>
+          <div class="heading-actions">
+            <button class="button button--bright" type="button" data-activate>Enter exploration <span aria-hidden="true">↗</span></button>
+            <a class="text-link" href="#keyboard">Next: key mechanism <span aria-hidden="true">↓</span></a>
+          </div>
         </div>
-        <table class="tabel">
-          <thead>
-            <tr><th scope="col">Tahap</th><th scope="col">Fokus</th><th scope="col">Komponen</th><th scope="col">Jarak kamera</th></tr>
-          </thead>
-          <tbody>
-            <tr><td class="num" data-label="Tahap">01</td><td data-label="Fokus">Rakit utuh</td><td data-label="Komponen">Semua grup</td><td class="num" data-label="Jarak kamera">13,5</td></tr>
-            <tr><td class="num" data-label="Tahap">02</td><td data-label="Fokus">Unit pemroses</td><td data-label="Komponen">Soket, IHS, pendingin</td><td class="num" data-label="Jarak kamera">4,6</td></tr>
-            <tr><td class="num" data-label="Tahap">03</td><td data-label="Fokus">Memori</td><td data-label="Komponen">Empat keping</td><td class="num" data-label="Jarak kamera">4,2</td></tr>
-            <tr><td class="num" data-label="Tahap">04</td><td data-label="Fokus">Grafis</td><td data-label="Komponen">Kartu dan dua kipas</td><td class="num" data-label="Jarak kamera">5,2</td></tr>
-            <tr><td class="num" data-label="Tahap">05</td><td data-label="Fokus">Daya dan simpan</td><td data-label="Komponen">Drive, regulator, port</td><td class="num" data-label="Jarak kamera">5,0</td></tr>
-            <tr><td class="num" data-label="Tahap">06</td><td data-label="Fokus">Tampilan lepas</td><td data-label="Komponen">Semua grup</td><td class="num" data-label="Jarak kamera">15,5</td></tr>
-            <tr><td class="num" data-label="Tahap">07</td><td data-label="Fokus">Utuh kembali</td><td data-label="Komponen">Semua grup</td><td class="num" data-label="Jarak kamera">12,5</td></tr>
-          </tbody>
-        </table>
-        <details class="diagram">
-          <summary>Diagram lepas alternatif</summary>
-          <figure>
-            <svg viewBox="0 0 420 260" aria-hidden="true">
-              <rect class="dg-board" x="40" y="170" width="340" height="70"></rect>
-              <rect class="dg-cpu" x="95" y="120" width="70" height="34"></rect>
-              <rect class="dg-cooler" x="100" y="72" width="60" height="30"></rect>
-              <rect class="dg-ram" x="205" y="108" width="18" height="56"></rect>
-              <rect class="dg-ram" x="230" y="108" width="18" height="56"></rect>
-              <rect class="dg-ram" x="255" y="108" width="18" height="56"></rect>
-              <rect class="dg-gpu" x="150" y="36" width="170" height="28"></rect>
-              <rect class="dg-ssd" x="300" y="132" width="60" height="16"></rect>
-              <path class="dg-line" d="M130 154 L130 170 M130 102 L130 120 M214 164 L214 170 M235 36 L235 64 M330 148 L330 170"></path>
-            </svg>
-            <figcaption>Skema letak dalam satuan adegan. Garis menunjukkan arah kembali ke papan.</figcaption>
-          </figure>
-        </details>
+        <div class="lab-heading__measure mono">
+          <strong>06</strong>
+          <span>thermal<br>components</span>
+        </div>
+      </div>
+
+      <div class="lab-layout">
+        <div class="lab-stage-column">
+          <div class="lab-stage ticks" data-stage>
+            <canvas class="scene-canvas" data-scene-canvas tabindex="0" aria-label="Interactive 3D model of an all-in-one liquid cooler. Click to activate the thermal exploration."></canvas>
+            <div class="stage-grid" aria-hidden="true"></div>
+            <div class="scene-label scene-label--top"><span class="scene-label__dot"></span><span data-scene-kicker>Loop overview</span></div>
+            <div class="scene-label scene-label--bottom"><span class="mono" data-scene-progress>00 / 08</span><span data-scene-label>complete cooling loop</span></div>
+            <button class="stage-activate" type="button" data-activate>
+              <span class="stage-activate__ring"><span>↗</span></span>
+              <span><strong>Click the model</strong><small>to start the scan</small></span>
+            </button>
+            <div class="webgl-note" data-webgl-note hidden>3D canvas unavailable. Use the component notes below to continue.</div>
+          </div>
+          <div class="stage-controls">
+            <button class="stage-control" type="button" data-stage-prev aria-label="Previous component"><span>Previous component</span></button>
+            <div class="stage-control__status"><span data-activation-status aria-live="polite">Waiting for activation</span></div>
+            <button class="stage-control" type="button" data-stage-next aria-label="Next component"><span>Next component</span></button>
+          </div>
+        </div>
+        <div class="lab-copy">
+          <div class="lab-copy__topline">
+            <span class="mono">Thermal system, AIO</span>
+            <span data-copy-count>06 nodes</span>
+          </div>
+          <div class="step-list" data-step-list></div>
+          <div class="reference-rail" data-reference-rail></div>
+        </div>
       </div>
     </section>
 
-    <section class="cut" id="potongan" aria-labelledby="potongan-judul">
-      <div class="container">
-        <div class="section-head">
-          <h2 id="potongan-judul">Potongan melintang papan</h2>
-          <p class="section-lead">Titik adegan diproyeksikan ke satu bidang, memperlihatkan ketinggian komponen.</p>
+    <div class="section-divider" aria-hidden="true"><span></span></div>
+
+    <section class="lab-section lab-section--keyboard" id="keyboard" data-lab="keyboard" aria-labelledby="keyboard-title">
+      <div class="lab-heading">
+        <div class="lab-heading__index mono">03 <span>/ 03</span></div>
+        <div class="lab-heading__copy">
+          <h2 id="keyboard-title">Every press begins<br><em>below the keycap.</em></h2>
+          <p class="eyebrow">Input device, mechanical keyboard</p>
+          <p class="intro">Click to enter. Follow a keycap, switch, circuit, and controller.</p>
+          <div class="heading-actions">
+            <button class="button button--bright" type="button" data-activate>Enter exploration <span aria-hidden="true">↗</span></button>
+            <a class="text-link" href="#sources">Read the source notes <span aria-hidden="true">↓</span></a>
+          </div>
         </div>
-        <figure class="cut__fig">
-          <canvas id="profile" aria-hidden="true"></canvas>
-          <figcaption>
-            <span class="cut__callout">Dasar papan <span class="num">0,0</span></span>
-            <span class="cut__callout">Pendingin <span class="num">2,1</span></span>
-          </figcaption>
+        <div class="lab-heading__measure mono">
+          <strong>07</strong>
+          <span>mechanical<br>layers</span>
+        </div>
+      </div>
+
+      <div class="lab-layout">
+        <div class="lab-copy">
+          <div class="lab-copy__topline">
+            <span class="mono">Input device, 75% board</span>
+            <span data-copy-count>07 nodes</span>
+          </div>
+          <div class="step-list" data-step-list></div>
+          <div class="reference-rail" data-reference-rail></div>
+        </div>
+        <div class="lab-stage-column">
+          <div class="lab-stage ticks" data-stage>
+            <canvas class="scene-canvas" data-scene-canvas tabindex="0" aria-label="Interactive 3D model of a mechanical keyboard. Click to activate the key mechanism exploration."></canvas>
+            <div class="stage-grid" aria-hidden="true"></div>
+            <div class="scene-label scene-label--top"><span class="scene-label__dot"></span><span data-scene-kicker>Keyboard overview</span></div>
+            <div class="scene-label scene-label--bottom"><span class="mono" data-scene-progress>00 / 09</span><span data-scene-label>complete input device</span></div>
+            <button class="stage-activate" type="button" data-activate>
+              <span class="stage-activate__ring"><span>↗</span></span>
+              <span><strong>Click the model</strong><small>to start the scan</small></span>
+            </button>
+            <div class="webgl-note" data-webgl-note hidden>3D canvas unavailable. Use the component notes below to continue.</div>
+          </div>
+          <div class="stage-controls">
+            <button class="stage-control" type="button" data-stage-prev aria-label="Previous component"><span>Previous component</span></button>
+            <div class="stage-control__status"><span data-activation-status aria-live="polite">Waiting for activation</span></div>
+            <button class="stage-control" type="button" data-stage-next aria-label="Next component"><span>Next component</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sources" id="sources" aria-labelledby="sources-title">
+      <div class="sources__head">
+        <h2 id="sources-title">The model is a guide.<br><em>Sources keep it honest.</em></h2>
+        <p class="eyebrow">Source desk</p>
+        <p>Photographs are included so the procedural model can be compared with real hardware. The 3D geometry in this prototype is intentionally readable rather than manufacturer-specific. The supplied visual studies also appear beside each learning sequence.</p>
+      </div>
+      <div class="source-grid">
+        <figure class="source-card">
+          <img src="assets/references/pc-motherboard-photo.jpg" alt="Photograph of a computer motherboard installed inside a case" loading="lazy" width="1568" height="1176">
+          <figcaption><span class="mono">Photo / 01</span><span>Motherboard in a case, Kurt Kaiser, Wikimedia Commons, CC0<br><a href="https://commons.wikimedia.org/wiki/File:Computer_motherboard_11.jpg" target="_blank" rel="noreferrer">Open source page ↗</a></span></figcaption>
+        </figure>
+        <figure class="source-card">
+          <img src="assets/references/cooling-waterblock-photo.jpg" alt="Photograph of a water cooling block and tubing inside a computer" loading="lazy" width="1568" height="1176">
+          <figcaption><span class="mono">Photo / 02</span><span>Water block in a PC, MasterMatt, Wikimedia Commons, public domain<br><a href="https://commons.wikimedia.org/wiki/File:Watercooling_vue_carte_graphique.jpg" target="_blank" rel="noreferrer">Open source page ↗</a></span></figcaption>
+        </figure>
+        <figure class="source-card">
+          <img src="assets/references/keyboard-keycaps-photo.jpg" alt="Photograph showing keyboard keycaps and switches removed from a keyboard" loading="lazy" width="1366" height="910">
+          <figcaption><span class="mono">Photo / 03</span><span>Keycaps and switches, snuci, Wikimedia Commons, public domain<br><a href="https://commons.wikimedia.org/wiki/File:NeXT_ADB_key_caps_and_switches.jpg" target="_blank" rel="noreferrer">Open source page ↗</a></span></figcaption>
         </figure>
       </div>
-    </section>
-
-    <section class="closing" id="rakit" aria-labelledby="rakit-judul">
-      <div class="container closing__in">
-        <h2 id="rakit-judul">Utuh kembali</h2>
-        <p class="lead">Titik kembali ke tempatnya. Papan selesai dipindai dan siap dirakit.</p>
-        <a class="btn btn--primary" href="#top">Ulangi pindai</a>
+      <div class="technical-notes">
+        <div class="technical-notes__label mono">Technical sources</div>
+        <div class="technical-notes__links">
+          <a href="https://www.intel.com/content/www/us/en/gaming/resources/cpu.html" target="_blank" rel="noreferrer">Intel / CPU fundamentals ↗</a>
+          <a href="https://www.micron.com/about/micron-glossary/what-is-dram" target="_blank" rel="noreferrer">Micron / DRAM ↗</a>
+          <a href="https://www.kingston.com/en/blog/personal-storage/what-is-nvme" target="_blank" rel="noreferrer">Kingston / NVMe storage ↗</a>
+          <a href="https://www.corsair.com/us/en/explorer/diy-builder/cpu-coolers/what-is-liquid-cooling/" target="_blank" rel="noreferrer">Corsair / liquid cooling ↗</a>
+          <a href="https://www.cherry.de/en-us/products/mx-switches" target="_blank" rel="noreferrer">CHERRY / MX switches ↗</a>
+          <a href="https://www.usb.org/documents" target="_blank" rel="noreferrer">USB-IF / specifications ↗</a>
+        </div>
       </div>
     </section>
   </main>
 
-  <footer class="footer">
-    <div class="container footer__in">
-      <p class="brand">pindai</p>
-      <p>Bahan rupa mengikuti tema Vantage dan aturan Floor dari repositori Hallmark. Tanpa foto stok, tanpa angka yang dikarang.</p>
-      <nav class="footer__nav" aria-label="Tautan kaki">
-        <a href="#journey">Penjelajahan</a>
-        <a href="#lapisan">Lapisan</a>
-        <a href="#register">Register</a>
-      </nav>
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>assembly<span class="brand-dot">.</span></span></div>
+      <p>Free to explore<br>Built as a learning prototype<br>No shopping flow</p>
+      <span class="mono">v0.3 / 2026</span>
     </div>
   </footer>
 </body>
