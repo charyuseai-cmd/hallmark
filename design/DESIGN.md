@@ -36,7 +36,7 @@ Desain baru untuk sebuah situs satu halaman yang memakai repositori `hallmark` s
 Pratinjau langsung memakai server statis:
 
 ```sh
-python3 -m http.server 4173 --bind 0.0.0.0 --directory design
+python3 -m http.server 4174 --bind 0.0.0.0 --directory design
 ```
 
 Data halaman dihasilkan ulang dari repositori, bukan diketik ulang:

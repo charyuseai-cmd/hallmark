@@ -71,7 +71,7 @@ Papan induk, jalur tembaga, lubang baut, soket, prosesor, heatsink, kipas, empat
 ## Mutu dan cara menjalankan
 
 ```sh
-python3 -m http.server 4174 --bind 0.0.0.0 --directory hardware-explorer
+python3 -m http.server 4173 --bind 0.0.0.0 --directory hardware-explorer
 ```
 
 Pemeriksaan linter bawaan repo:
