@@ -15,6 +15,21 @@ body::before {
 }
 main, .site-header, .site-footer { position: relative; z-index: var(--z-content); }
 
+/* Vanilla adaptations of React Bits AnimatedContent and SpotlightCard.
+   They are intentionally small, dependency-free and keep the 3D scene in charge. */
+html.js [data-reveal] { opacity: 0; transform: translateY(22px); transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out); }
+html.js [data-reveal].is-revealed { opacity: 1; transform: none; }
+
+.spotlight-surface { --spot-x: 50%; --spot-y: 50%; --spotlight-color: var(--accent); position: relative; isolation: isolate; }
+.spotlight-surface::before, .spotlight-surface::after { content: ""; position: absolute; inset: 0; z-index: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity 280ms var(--ease-out); }
+.spotlight-surface::before { background: radial-gradient(210px circle at var(--spot-x) var(--spot-y), color-mix(in srgb, var(--spotlight-color) 14%, transparent), transparent 72%); }
+.spotlight-surface::after { border: 1px solid color-mix(in srgb, var(--spotlight-color) 42%, transparent); box-shadow: 0 0 32px -20px var(--spotlight-color); }
+.spotlight-surface.is-spotlit::before, .spotlight-surface.is-spotlit::after { opacity: 1; }
+.spotlight-surface > * { position: relative; z-index: 1; }
+
+@keyframes lab-ring-pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); } 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 12%, transparent); } }
+.stage-activate__ring { animation: lab-ring-pulse 3.4s var(--ease-standard) infinite; }
+
 .site-header {
   position: sticky;
   top: 0;
@@ -228,5 +243,6 @@ main, .site-header, .site-footer { position: relative; z-index: var(--z-content)
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  html.js [data-reveal] { opacity: 1; transform: none; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }

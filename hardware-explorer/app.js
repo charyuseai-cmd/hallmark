@@ -9,7 +9,10 @@ import * as THREE from './vendor/three.module.js';
 
   const gsap = window.gsap;
   const ScrollTrigger = window.ScrollTrigger;
-  if (!gsap || !ScrollTrigger) return;
+  if (!gsap || !ScrollTrigger) {
+    document.querySelectorAll('[data-reveal]').forEach((item) => item.classList.add('is-revealed'));
+    return;
+  }
   gsap.registerPlugin(ScrollTrigger);
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -947,7 +950,39 @@ import * as THREE from './vendor/three.module.js';
   function renderReferences(section, data) {
     const rail = section.querySelector('[data-reference-rail]');
     if (!rail) return;
-    rail.innerHTML = `<div class="reference-rail__head"><strong>Visual references</strong><span>photos and studies</span></div><div class="reference-rail__grid">${data.references.map((reference, index) => `<a class="reference-thumb" href="${escapeHTML(reference.sourceUrl || '#sources')}" ${reference.sourceUrl && reference.sourceUrl.startsWith('http') ? 'target="_blank" rel="noreferrer"' : ''}><figure><img src="${escapeHTML(reference.src)}" alt="${escapeHTML(reference.label)}" loading="lazy"><figcaption><span class="mono">REF / 0${index + 1}</span><span><strong>${escapeHTML(reference.label)}</strong><small>${escapeHTML(reference.source)}</small></span></figcaption></figure></a>`).join('')}</div>`;
+    rail.innerHTML = `<div class="reference-rail__head"><strong>Visual references</strong><span>photos and studies</span></div><div class="reference-rail__grid">${data.references.map((reference, index) => `<a class="reference-thumb spotlight-surface" data-spotlight href="${escapeHTML(reference.sourceUrl || '#sources')}" ${reference.sourceUrl && reference.sourceUrl.startsWith('http') ? 'target="_blank" rel="noreferrer"' : ''}><figure><img src="${escapeHTML(reference.src)}" alt="${escapeHTML(reference.label)}" loading="lazy"><figcaption><span class="mono">REF / 0${index + 1}</span><span><strong>${escapeHTML(reference.label)}</strong><small>${escapeHTML(reference.source)}</small></span></figcaption></figure></a>`).join('')}</div>`;
+  }
+
+  function bindReveals() {
+    const items = Array.from(document.querySelectorAll('[data-reveal]'));
+    if (!items.length) return;
+    if (reducedMotion || !('IntersectionObserver' in window)) {
+      items.forEach((item) => item.classList.add('is-revealed'));
+      return;
+    }
+    const observer = new IntersectionObserver((entries, instance) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-revealed');
+        instance.unobserve(entry.target);
+      });
+    }, { rootMargin: '-10% 0px -12% 0px', threshold: 0.08 });
+    items.forEach((item) => observer.observe(item));
+  }
+
+  function bindSpotlights() {
+    document.querySelectorAll('[data-spotlight]').forEach((surface) => {
+      const move = (event) => {
+        if (event.pointerType === 'touch') return;
+        const rect = surface.getBoundingClientRect();
+        surface.style.setProperty('--spot-x', `${event.clientX - rect.left}px`);
+        surface.style.setProperty('--spot-y', `${event.clientY - rect.top}px`);
+        surface.classList.add('is-spotlit');
+      };
+      surface.addEventListener('pointermove', move, { passive: true });
+      surface.addEventListener('pointerenter', move, { passive: true });
+      surface.addEventListener('pointerleave', () => surface.classList.remove('is-spotlit'), { passive: true });
+    });
   }
 
   const scenes = [];
@@ -996,6 +1031,9 @@ import * as THREE from './vendor/three.module.js';
     scene.goToIndex(index);
   };
   document.querySelectorAll('[data-step-list]').forEach((list) => list.addEventListener('click', goToStep));
+
+  bindReveals();
+  bindSpotlights();
 
   const onResize = () => scenes.forEach((scene) => scene.resize());
   window.addEventListener('resize', onResize, { passive: true });

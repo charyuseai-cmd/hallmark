@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>document.documentElement.classList.add('js');</script>
   <link rel="stylesheet" href="style.css">
   <script src="vendor/gsap.min.js" defer></script>
   <script src="vendor/ScrollTrigger.min.js" defer></script>
@@ -36,7 +37,7 @@
 
   <main id="main">
     <section class="lab-section lab-section--pc" id="pc" data-lab="pc" aria-labelledby="pc-title">
-      <div class="lab-heading">
+      <div class="lab-heading" data-reveal>
         <div class="lab-heading__index mono">01 <span>/ 03</span></div>
         <div class="lab-heading__copy">
           <h1 id="pc-title">A computer is a<br><em>system of layers.</em></h1>
@@ -60,7 +61,7 @@
             <span data-copy-count>08 nodes</span>
           </div>
           <div class="step-list" data-step-list></div>
-          <div class="reference-rail" data-reference-rail></div>
+          <div class="reference-rail" data-reference-rail data-reveal></div>
         </div>
 
         <div class="lab-stage-column">
@@ -87,7 +88,7 @@
     <div class="section-divider" aria-hidden="true"><span></span></div>
 
     <section class="lab-section lab-section--cooling" id="cooling" data-lab="cooling" aria-labelledby="cooling-title">
-      <div class="lab-heading">
+      <div class="lab-heading" data-reveal>
         <div class="lab-heading__index mono">02 <span>/ 03</span></div>
         <div class="lab-heading__copy">
           <h2 id="cooling-title">Heat has a<br><em>route to follow.</em></h2>
@@ -129,7 +130,7 @@
             <span data-copy-count>06 nodes</span>
           </div>
           <div class="step-list" data-step-list></div>
-          <div class="reference-rail" data-reference-rail></div>
+          <div class="reference-rail" data-reference-rail data-reveal></div>
         </div>
       </div>
     </section>
@@ -137,7 +138,7 @@
     <div class="section-divider" aria-hidden="true"><span></span></div>
 
     <section class="lab-section lab-section--keyboard" id="keyboard" data-lab="keyboard" aria-labelledby="keyboard-title">
-      <div class="lab-heading">
+      <div class="lab-heading" data-reveal>
         <div class="lab-heading__index mono">03 <span>/ 03</span></div>
         <div class="lab-heading__copy">
           <h2 id="keyboard-title">Every press begins<br><em>below the keycap.</em></h2>
@@ -161,7 +162,7 @@
             <span data-copy-count>07 nodes</span>
           </div>
           <div class="step-list" data-step-list></div>
-          <div class="reference-rail" data-reference-rail></div>
+          <div class="reference-rail" data-reference-rail data-reveal></div>
         </div>
         <div class="lab-stage-column">
           <div class="lab-stage ticks" data-stage>
@@ -185,21 +186,21 @@
     </section>
 
     <section class="sources" id="sources" aria-labelledby="sources-title">
-      <div class="sources__head">
+      <div class="sources__head" data-reveal>
         <h2 id="sources-title">The model is a guide.<br><em>Sources keep it honest.</em></h2>
         <p class="eyebrow">Source desk</p>
         <p>Photographs are included so the procedural model can be compared with real hardware. The 3D geometry in this prototype is intentionally readable rather than manufacturer-specific. The supplied visual studies also appear beside each learning sequence.</p>
       </div>
-      <div class="source-grid">
-        <figure class="source-card">
+      <div class="source-grid" data-reveal>
+        <figure class="source-card spotlight-surface" data-spotlight>
           <img src="assets/references/pc-motherboard-photo.jpg" alt="Photograph of a computer motherboard installed inside a case" loading="lazy" width="1568" height="1176">
           <figcaption><span class="mono">Photo / 01</span><span>Motherboard in a case, Kurt Kaiser, Wikimedia Commons, CC0<br><a href="https://commons.wikimedia.org/wiki/File:Computer_motherboard_11.jpg" target="_blank" rel="noreferrer">Open source page ↗</a></span></figcaption>
         </figure>
-        <figure class="source-card">
+        <figure class="source-card spotlight-surface" data-spotlight>
           <img src="assets/references/cooling-waterblock-photo.jpg" alt="Photograph of a water cooling block and tubing inside a computer" loading="lazy" width="1568" height="1176">
           <figcaption><span class="mono">Photo / 02</span><span>Water block in a PC, MasterMatt, Wikimedia Commons, public domain<br><a href="https://commons.wikimedia.org/wiki/File:Watercooling_vue_carte_graphique.jpg" target="_blank" rel="noreferrer">Open source page ↗</a></span></figcaption>
         </figure>
-        <figure class="source-card">
+        <figure class="source-card spotlight-surface" data-spotlight>
           <img src="assets/references/keyboard-keycaps-photo.jpg" alt="Photograph showing keyboard keycaps and switches removed from a keyboard" loading="lazy" width="1366" height="910">
           <figcaption><span class="mono">Photo / 03</span><span>Keycaps and switches, snuci, Wikimedia Commons, public domain<br><a href="https://commons.wikimedia.org/wiki/File:NeXT_ADB_key_caps_and_switches.jpg" target="_blank" rel="noreferrer">Open source page ↗</a></span></figcaption>
         </figure>

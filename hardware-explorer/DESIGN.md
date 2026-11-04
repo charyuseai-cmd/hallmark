@@ -26,6 +26,16 @@ Every component is represented by a named Three.js group and has a shared educat
 
 The records live in `app.js` under `HARDWARE`. The same records generate the step cards, stage labels, camera targets, component highlight, related-component chips and source links.
 
+## React Bits reference
+
+The current page stays on its existing vanilla Three.js architecture. React Bits was used as a visual and interaction reference, not added as a runtime dependency:
+
+- `SpotlightCard` inspired the pointer-following light on the reference cards.
+- `AnimatedContent` inspired the small intersection-based reveal on exhibition headings and source rails.
+- `StarBorder` inspired the restrained activation-ring pulse around the model entry control.
+
+These are original CSS and browser API adaptations in `style.css` and `app.js`; no React Bits source file was copied into the product. The reference repository is <https://github.com/DavidHDev/react-bits> and its current inspected revision was `4dc7b5b7772e1217c8fb8d2a7aa074302180e5b4`. React Bits is distributed under an MIT license with Commons Clause conditions, so keeping the implementation as an inspiration-only adaptation avoids bundling or redistributing its components.
+
 ## Interaction model
 
 Each exhibition follows the same learning loop without making the compositions identical:
